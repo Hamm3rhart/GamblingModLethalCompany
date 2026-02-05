@@ -12,12 +12,59 @@ namespace GamblersMod.RoundManagerCustomSpace
         private void Awake()
         {
             RoundManager = GetComponent<RoundManager>();
+            BuildSpawnPointsFromConfig();
+        }
+
+        private void BuildSpawnPointsFromConfig()
+        {
             spawnPoints = new List<Vector3>();
 
-            for (int i = 0; i < 12; i++)
+            var cfg = Plugin.CurrentUserConfig;
+
+            // Swap semantics: MachinesPerRow now defines how many rows, NumberOfRows defines how many machines per row
+            int rows = Mathf.Max(1, cfg.configMachinesPerRow);
+            int perRow = Mathf.Max(1, cfg.configNumberOfRows);
+
+            // Spacing follows swapped semantics too
+            float rowSpacing = cfg.configColumnSpacing <= 0f ? 5f : cfg.configColumnSpacing;
+            float columnSpacing = cfg.configRowSpacing <= 0f ? 5f : cfg.configRowSpacing;
+
+            // Anchor at the original spawn point used previously
+            Vector3 basePoint = new Vector3(-27.808f, -2.6256f, -14.7409f);
+
+            for (int row = 0; row < rows; row++)
             {
-                spawnPoints.Add(new Vector3(-27.808f, -2.6256f, -14.7409f + (i * 5)));
+                for (int col = 0; col < perRow; col++)
+                {
+                    Vector3 offset = new Vector3(col * columnSpacing, 0f, row * rowSpacing);
+                    spawnPoints.Add(basePoint + offset);
+                }
             }
+        }
+
+        private int CalculateSpawnCount()
+        {
+            var cfg = Plugin.CurrentUserConfig;
+            int capacity = spawnPoints.Count;
+            string mode = (cfg.configMachineSpawnMode ?? string.Empty).ToUpperInvariant();
+
+            if (mode == GamblersMod.config.GambleConstants.MACHINE_SPAWN_MODE_MAX)
+            {
+                return capacity;
+            }
+
+            if (mode == GamblersMod.config.GambleConstants.MACHINE_SPAWN_MODE_AUTO)
+            {
+                int playerCount = 1;
+                if (NetworkManager.Singleton != null)
+                {
+                    playerCount = Mathf.Max(1, NetworkManager.Singleton.ConnectedClients.Count);
+                }
+                return Mathf.Min(capacity, playerCount);
+            }
+
+            // Fallback to MAX
+            return capacity;
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -41,7 +88,14 @@ namespace GamblersMod.RoundManagerCustomSpace
 
             Plugin.mls.LogInfo($"Attempting to spawn gambling machine at {RoundManager.currentLevel.name}");
 
-            for (int i = 0; i < Plugin.CurrentUserConfig.configNumberOfMachines; i++)
+            // Rebuild in case config was changed after Awake (e.g. synced from host)
+            BuildSpawnPointsFromConfig();
+
+            int spawnCount = CalculateSpawnCount();
+
+            Plugin.mls.LogInfo($"Spawning up to {spawnCount} gambling machines (capacity {spawnPoints.Count})");
+
+            for (int i = 0; i < spawnCount; i++)
             {
                 if (i >= spawnPoints.Count)
                 {

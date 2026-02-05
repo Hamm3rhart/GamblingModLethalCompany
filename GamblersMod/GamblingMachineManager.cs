@@ -36,12 +36,6 @@ namespace GamblersMod
             gamblingMachine.layer = LayerMask.NameToLayer("InteractableObject");
             gamblingMachine.GetComponent<NetworkObject>().Spawn(false);
 
-            // Only the first gambling machine will play music
-            if (GamblingMachines.Count >= 1)
-            {
-                gamblingMachine.GetComponent<AudioSource>().Pause();
-            }
-
             GamblingMachines.Add(gamblingMachine);
         }
 

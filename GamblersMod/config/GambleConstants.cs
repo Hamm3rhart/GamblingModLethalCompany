@@ -9,10 +9,18 @@ namespace GamblersMod.config
         public static readonly string GAMBLING_CHANCE_SECTION_KEY = "Gambling Chances";
         public static readonly string GAMBLING_MULTIPLIERS_SECTION_KEY = "Gambling Multipliers";
         public static readonly string GAMBLING_AUDIO_SECTION_KEY = "Audio";
+        public static readonly string GAMBLING_LAYOUT_SECTION_KEY = "Machine Layout";
 
         public static readonly string CONFIG_MAXCOOLDOWN = "gamblingMachineMaxCooldown";
         public static readonly string CONFIG_NUMBER_OF_USES = "Number Of Uses";
-        public static readonly string CONFIG_NUMBER_OF_MACHINES = "Number Of Machines";
+        public static readonly string CONFIG_MACHINE_SPAWN_MODE = "Machine Spawn Mode";
+        public static readonly string CONFIG_NUMBER_OF_ROWS = "Number Of Rows";
+        public static readonly string CONFIG_MACHINES_PER_ROW = "Machines Per Row";
+        public static readonly string CONFIG_ROW_SPACING = "Row Spacing";
+        public static readonly string CONFIG_COLUMN_SPACING = "Column Spacing";
+
+        public const string MACHINE_SPAWN_MODE_AUTO = "AUTO";
+        public const string MACHINE_SPAWN_MODE_MAX = "MAX";
 
         public static readonly string CONFIG_JACKPOT_CHANCE_KEY = "JackpotChance";
         public static readonly string CONFIG_TRIPLE_CHANCE_KEY = "TripleChance";

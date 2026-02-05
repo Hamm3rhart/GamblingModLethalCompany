@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using GamblersMod.config;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -31,9 +32,26 @@ namespace GamblersMod.RoundManagerCustomSpace
         {
             Plugin.mls.LogInfo($"Attempting to spawn gambling machine at {RoundManager.currentLevel.name}");
 
-            for (int i = 0; i < Plugin.CurrentUserConfig.configNumberOfMachines; i++)
+            int capacity = spawnPoints.Count;
+            string mode = (Plugin.CurrentUserConfig.configMachineSpawnMode ?? string.Empty).ToUpperInvariant();
+            int spawnCount;
+
+            if (mode == GambleConstants.MACHINE_SPAWN_MODE_MAX)
             {
-                // Machine spawn per vector points
+                spawnCount = capacity;
+            }
+            else if (mode == GambleConstants.MACHINE_SPAWN_MODE_AUTO)
+            {
+                int playerCount = Mathf.Max(1, NetworkManager.Singleton?.ConnectedClients.Count ?? 1);
+                spawnCount = Mathf.Min(capacity, playerCount);
+            }
+            else
+            {
+                spawnCount = capacity; // fallback
+            }
+
+            for (int i = 0; i < spawnCount; i++)
+            {
                 if (i >= spawnPoints.Count) return;
                 GamblingMachineManager.Instance.Spawn(spawnPoints[i], Quaternion.Euler(0, 90, 0));
                 Plugin.mls.LogInfo($"Spawned machine number: {i}");

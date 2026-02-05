@@ -10,7 +10,11 @@ namespace GamblersMod.config
         // General
         public int configMaxCooldown;
         public int configNumberOfUses;
-        public int configNumberOfMachines;
+        public string configMachineSpawnMode;
+        public int configNumberOfRows;
+        public int configMachinesPerRow;
+        public float configRowSpacing;
+        public float configColumnSpacing;
 
         // Gambling chances
         public int configJackpotChance;
@@ -35,7 +39,13 @@ namespace GamblersMod.config
             // General
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAXCOOLDOWN, 4, "Cooldown of the machine. Reducing this will cause the drumroll sound to not sync & may also cause latency issues");
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES, 9999, "Number of times a gambling machine can be used");
-            configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_MACHINES, 3, "How many gambling machines will be spawned (max 4)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, MACHINE_SPAWN_MODE_AUTO,
+                new ConfigDescription("Machine spawn mode: AUTO spawns up to the player count, MAX fills the grid capacity",
+                new AcceptableValueList<string>(MACHINE_SPAWN_MODE_AUTO, MACHINE_SPAWN_MODE_MAX)));
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS, 1, "How many machines per row (swapped semantics)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW, 12, "How many rows of gambling machines will be spawned (swapped semantics)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING, 5f, "Distance between machines in a row (left/right, swapped semantics)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING, 5f, "Distance between rows of machines (forward/back, swapped semantics)");
 
             // Chance
             configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_JACKPOT_CHANCE_KEY, 3, "Chance to roll a jackpot. Ex. If set to 3, you have a 3% chance to get a jackpot. Make sure ALL your chance values add up to 100 or else the math won't make sense!");
@@ -73,7 +83,11 @@ namespace GamblersMod.config
             configGamblingMusicVolume = GetConfigFileKeyValue<float>(configFile, GAMBLING_AUDIO_SECTION_KEY, CONFIG_GAMBLING_MUSIC_VOLUME);
 
             configNumberOfUses = GetConfigFileKeyValue<int>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES);
-            configNumberOfMachines = GetConfigFileKeyValue<int>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_MACHINES);
+            configMachineSpawnMode = GetConfigFileKeyValue<string>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE);
+            configNumberOfRows = GetConfigFileKeyValue<int>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS);
+            configMachinesPerRow = GetConfigFileKeyValue<int>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW);
+            configRowSpacing = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING);
+            configColumnSpacing = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING);
 
             LogInitializedConfigsValues();
         }
@@ -99,7 +113,11 @@ namespace GamblersMod.config
             pluginLogger.LogInfo($"Music volume from config: {configGamblingMusicVolume}");
 
             pluginLogger.LogInfo($"Number of uses from config: {configNumberOfUses}");
-            pluginLogger.LogInfo($"Number of machines from config: {configNumberOfMachines}");
+            pluginLogger.LogInfo($"Machine spawn mode from config: {configMachineSpawnMode}");
+            pluginLogger.LogInfo($"Number of rows from config: {configNumberOfRows}");
+            pluginLogger.LogInfo($"Machines per row from config: {configMachinesPerRow}");
+            pluginLogger.LogInfo($"Row spacing from config: {configRowSpacing}");
+            pluginLogger.LogInfo($"Column spacing from config: {configColumnSpacing}");
         }
 
         private T GetConfigFileKeyValue<T>(ConfigFile configFile, string section, string key)

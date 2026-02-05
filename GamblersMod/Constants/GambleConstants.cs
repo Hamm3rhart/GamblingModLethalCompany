@@ -7,11 +7,11 @@
         public readonly static string GAMBLING_CHANCE_SECTION_KEY = "Gambling Chances";
         public readonly static string GAMBLING_MULTIPLIERS_SECTION_KEY = "Gambling Multipliers";
         public readonly static string GAMBLING_AUDIO_SECTION_KEY = "Audio";
+        public readonly static string GAMBLING_LAYOUT_SECTION_KEY = "Machine Layout";
 
         // General Subsection keys
         public readonly static string CONFIG_MAXCOOLDOWN = "gamblingMachineMaxCooldown";
         public readonly static string CONFIG_NUMBER_OF_USES = "Number Of Uses";
-        public readonly static string CONFIG_NUMBER_OF_MACHINES = "Number Of Machines";
 
         // Chance subsection keys
         public readonly static string CONFIG_JACKPOT_CHANCE_KEY = "JackpotChance";
