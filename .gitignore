@@ -85,3 +85,14 @@ TestResult.xml
 Version.cs
 Version.h
 Version.cpp
+
+# Local dependencies and decompiled artifacts
+/0Harmony.dll
+/BepInEx.dll
+/LC_API_V50.dll
+/GamblersMod.dll
+/DECOMPILED DLL/
+/GamblersMod/DECOMPILED DLL/
+/GamblersMod/__GEN/
+/GamblersMod/bin/
+/GamblersMod/obj/

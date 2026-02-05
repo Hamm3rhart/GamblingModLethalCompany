@@ -6,20 +6,19 @@ using UnityEngine.InputSystem;
 
 namespace GamblersMod.Player
 {
-    // PlayerControllerB but with my custom state
     internal class PlayerControllerCustom : NetworkBehaviour
     {
         private PlayerGamblingUIManager PlayerGamblingUIManager;
         private PlayerControllerB PlayerControllerOriginal;
-        public bool isUsingGamblingMachine; // Can only use one gambling machine at a time
+        public bool isUsingGamblingMachine;
 
-        void Awake()
+        private void Awake()
         {
             PlayerGamblingUIManager = gameObject.AddComponent<PlayerGamblingUIManager>();
             PlayerControllerOriginal = gameObject.GetComponent<PlayerControllerB>();
         }
 
-        void Update()
+        private void Update()
         {
             if (!IsOwner)
             {
@@ -27,63 +26,40 @@ namespace GamblersMod.Player
             }
 
             Camera gameplayCamera = PlayerControllerOriginal.gameplayCamera;
-
             Vector3 playerPosition = gameplayCamera.transform.position;
             Vector3 forwardDirection = gameplayCamera.transform.forward;
             Ray interactionRay = new Ray(playerPosition, forwardDirection);
-            RaycastHit interactionRayHit;
-            float interactionRayLength = 5.0f;
+            float interactionRayLength = 5f;
+            int interactableMask = 1 << 9;
 
-            int maskToCastRayOnlyForInteractableObjects = 1 << 9;
-            //int layerMask5And3And18 = Convert.ToInt32("11111111111110111111111111010111", 2);
-            //LayerMask[] layersToIgnore = { LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("UI"), LayerMask.NameToLayer("LineOfSight") };
-            bool hitfound = Physics.Raycast(interactionRay, out interactionRayHit, interactionRayLength, maskToCastRayOnlyForInteractableObjects);
-
-            // An Interactable object was hit
-            if (interactionRayHit.collider)
+            if (Physics.Raycast(interactionRay, out RaycastHit interactionRayHit, interactionRayLength, interactableMask) && interactionRayHit.collider)
             {
-                GameObject gameObjectHitByRayCast = interactionRayHit.transform.gameObject;
+                GameObject hitObject = interactionRayHit.transform.gameObject;
 
-                // Collider with the name "GamblingMachine" was hit, so show tooltip on gambling machine
-                if (gameObjectHitByRayCast.name.Contains("GamblingMachine"))
+                if (hitObject.name.Contains("GamblingMachine"))
                 {
                     PlayerGamblingUIManager.ShowInteractionText();
 
-                    // Get the item the player is currently holding (null checks)
-                    GrabbableObject currentlyHeldObjectInHand = PlayerControllerOriginal.ItemSlots[PlayerControllerOriginal.currentItemSlot];
+                    GrabbableObject heldObject = PlayerControllerOriginal.ItemSlots[PlayerControllerOriginal.currentItemSlot];
+                    GamblingMachine gamblingMachine = hitObject.GetComponent<GamblingMachine>();
 
-                    GamblingMachine GamblingMachineHit = gameObjectHitByRayCast.GetComponent<GamblingMachine>();
-
-                    // If in cooldown, show cooldown text
-                    if (GamblingMachineHit.isInCooldownPhase())
+                    if (gamblingMachine.isInCooldownPhase())
                     {
-                        PlayerGamblingUIManager.SetInteractionText($"Cooling down... {GamblingMachineHit.gamblingMachineCurrentCooldown}");
+                        PlayerGamblingUIManager.SetInteractionText($"Cooling down... {gamblingMachine.gamblingMachineCurrentCooldown}");
                     }
-                    else if (GamblingMachineHit.numberOfUses <= 0)
+                    else if (gamblingMachine.numberOfUses <= 0)
                     {
-                        PlayerGamblingUIManager.SetInteractionText($"This machine is all used up");
+                        PlayerGamblingUIManager.SetInteractionText("This machine is all used up");
                     }
                     else
                     {
-                        string interactKeyName = IngamePlayerSettings.Instance.playerInput.actions.FindAction("Interact").GetBindingDisplayString(0);
-                        // string numberOfUses = GamblingMachineHit.numberOfUses.ToString();
-
-                        if (isUsingGamblingMachine)
-                        {
-                            PlayerGamblingUIManager.SetInteractionText($"You're already using a machine");
-                        }
-                        else
-                        {
-                            PlayerGamblingUIManager.SetInteractionText($"Gamble: [{interactKeyName}]");
-                        }
-
-
+                        string interactKeyName = InputActionRebindingExtensions.GetBindingDisplayString(IngamePlayerSettings.Instance.playerInput.actions.FindAction("Interact", false), 0, 0);
+                        PlayerGamblingUIManager.SetInteractionText(isUsingGamblingMachine ? "You're already using a machine" : $"Gamble: [{interactKeyName}]");
                     }
 
-                    // Object in hand so show subtext
-                    if (currentlyHeldObjectInHand)
+                    if (heldObject)
                     {
-                        PlayerGamblingUIManager.SetInteractionSubText($"Scrap value on hand: ■{currentlyHeldObjectInHand.scrapValue}");
+                        PlayerGamblingUIManager.SetInteractionSubText($"Scrap value on hand: ■{heldObject.scrapValue}");
                     }
                     else
                     {
@@ -91,15 +67,12 @@ namespace GamblersMod.Player
                     }
                 }
 
-                // Handle gambling machine input
-                // if (gameObjectHitByRayCast.name.Contains("GamblingMachine") && PlayerControllerOriginal.playerActions.FindAction("Interact").triggered)
-                if (gameObjectHitByRayCast.name.Contains("GamblingMachine") && IngamePlayerSettings.Instance.playerInput.actions.FindAction("Interact").triggered)
+                if (hitObject.name.Contains("GamblingMachine") && IngamePlayerSettings.Instance.playerInput.actions.FindAction("Interact", false).triggered)
                 {
-                    GamblingMachine GamblingMachineHit = gameObjectHitByRayCast.GetComponent<GamblingMachine>();
-                    handleGamblingMachineInput(GamblingMachineHit);
+                    GamblingMachine gamblingMachine = hitObject.GetComponent<GamblingMachine>();
+                    HandleGamblingMachineInput(gamblingMachine);
                 }
             }
-            // An interactable object was not hit (player is looking at something else)
             else
             {
                 PlayerGamblingUIManager.HideInteractionText();
@@ -118,29 +91,26 @@ namespace GamblersMod.Player
             isUsingGamblingMachine = true;
         }
 
-        void handleGamblingMachineInput(GamblingMachine GamblingMachineHit)
+        private void HandleGamblingMachineInput(GamblingMachine gamblingMachine)
         {
-            // Get the item the player is currently holding (null checks)
-            GrabbableObject currentlyHeldObjectInHand = PlayerControllerOriginal.ItemSlots[PlayerControllerOriginal.currentItemSlot];
+            GrabbableObject heldObject = PlayerControllerOriginal.ItemSlots[PlayerControllerOriginal.currentItemSlot];
 
-            // Don't do anything if nothing in hand OR still in cooldown
-            if (!currentlyHeldObjectInHand)
+            if (!heldObject)
             {
                 return;
             }
 
-            if (GamblingMachineHit.isInCooldownPhase() || GamblingMachineHit.numberOfUses <= 0 || isUsingGamblingMachine)
+            if (gamblingMachine.isInCooldownPhase() || gamblingMachine.numberOfUses <= 0 || isUsingGamblingMachine)
             {
                 return;
             }
 
             Plugin.mls.LogInfo($"Gambling machine was interacted with by: {PlayerControllerOriginal.playerUsername}");
+            gamblingMachine.SetCurrentGamblingCooldownToMaxCooldown();
+            Plugin.mls.LogMessage($"Scrap value of {heldObject.name} on hand: ▊{heldObject.scrapValue}");
 
-            GamblingMachineHit.SetCurrentGamblingCooldownToMaxCooldown();
-
-            Plugin.mls.LogMessage($"Scrap value of {currentlyHeldObjectInHand.name} on hand: ▊{currentlyHeldObjectInHand.scrapValue}");
-            GamblingMachineHit.ActivateGamblingMachineServerRPC(currentlyHeldObjectInHand, this);
-            PlayerGamblingUIManager.SetInteractionText($"Cooling down... {GamblingMachineHit.gamblingMachineCurrentCooldown}");
+            gamblingMachine.ActivateGamblingMachineServerRPC(heldObject, this);
+            PlayerGamblingUIManager.SetInteractionText($"Cooling down... {gamblingMachine.gamblingMachineCurrentCooldown}");
         }
     }
 }
