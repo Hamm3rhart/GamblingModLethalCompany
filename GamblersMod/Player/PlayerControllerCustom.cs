@@ -12,6 +12,8 @@ namespace GamblersMod.Player
         private PlayerControllerB PlayerControllerOriginal;
         public bool isUsingGamblingMachine;
 
+        public PlayerControllerB OriginalController => PlayerControllerOriginal;
+
         private void Awake()
         {
             PlayerGamblingUIManager = gameObject.AddComponent<PlayerGamblingUIManager>();
@@ -111,6 +113,12 @@ namespace GamblersMod.Player
 
             gamblingMachine.ActivateGamblingMachineServerRPC(heldObject, this);
             PlayerGamblingUIManager.SetInteractionText($"Cooling down... {gamblingMachine.gamblingMachineCurrentCooldown}");
+        }
+
+        public void KillWithExplosion()
+        {
+            // Use standard blast cause to mirror landmine behavior
+            PlayerControllerOriginal.KillPlayer(Vector3.zero, true, CauseOfDeath.Blast, 0);
         }
     }
 }

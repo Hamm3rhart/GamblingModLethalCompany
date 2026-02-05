@@ -10,6 +10,7 @@ namespace GamblersMod.config
         // General
         public int configMaxCooldown;
         public int configNumberOfUses;
+        public int configMaxValueLimit;
         public string configMachineSpawnMode;
         public int configNumberOfRows;
         public int configMachinesPerRow;
@@ -26,6 +27,7 @@ namespace GamblersMod.config
         public int configDoubleChance;
         public int configHalveChance;
         public int configZeroChance;
+        public int configExplodeChance;
 
         // Gambling multipliers
         public float configJackpotMultiplier;
@@ -33,6 +35,7 @@ namespace GamblersMod.config
         public float configDoubleMultiplier;
         public float configHalveMultiplier;
         public float configZeroMultiplier;
+        public float configExplodeMultiplier;
 
         // Audio
         public bool configGamblingMusicEnabled;
@@ -55,6 +58,7 @@ namespace GamblersMod.config
             // General
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAXCOOLDOWN, 4, "Cooldown of the machine. Reducing this will cause the drumroll sound to not sync & may also cause latency issues");
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES, 9999, "Number of times a gambling machine can be used");
+            configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAX_VALUE_LIMIT, int.MaxValue, "Maximum scrap value after gambling. 0 or negative disables the cap");
             var spawnDefault = CoerceSpawnMode(legacySpawnMode);
             configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, spawnDefault,
                 new ConfigDescription("Machine spawn mode: AUTO spawns up to the player count, MAX fills the grid capacity",
@@ -74,6 +78,7 @@ namespace GamblersMod.config
             configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_DOUBLE_CHANCE_KEY, 27, "Chance to roll a double. Ex. If set to 27, you have a 27% chance to get a double. Make sure ALL your chance values add up to 100 or else the math won't make sense!");
             configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_HALVE_CHANCE_KEY, 50, "Chance to roll a halve. Ex. If set to 47, you have a 47% chance to get a halve. Make sure ALL your chance values add up to 100 or else the math won't make sense!");
             configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_ZERO_CHANCE_KEY, 9, "Chance to roll a zero. Ex. If set to 12, you have a 12% chance to get a zero. Make sure ALL your chance values add up to 100 or else the math won't make sense!");
+            configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_EXPLODE_CHANCE_KEY, 1, "Chance to explode (mine). Make sure ALL your chance values add up to 100 or else the math won't make sense!");
 
             // Multipliers
             configFile.Bind(GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_JACKPOT_MULTIPLIER, 10f, "Jackpot multiplier");
@@ -81,6 +86,7 @@ namespace GamblersMod.config
             configFile.Bind(GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_DOUBLE_MULTIPLIER, 2f, "Double multiplier");
             configFile.Bind(GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_HALVE_MULTIPLIER, 0.5f, "Halve multiplier");
             configFile.Bind(GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_ZERO_MULTIPLIER, 0f, "Zero multiplier");
+            configFile.Bind(GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_EXPLODE_MULTIPLIER, 0f, "Explode multiplier applied before the explosion");
 
             // Audio
             configFile.Bind(GAMBLING_AUDIO_SECTION_KEY, CONFIG_GAMBLING_MUSIC_ENABLED, true, "Enable gambling machine music (CLIENT SIDE)");
@@ -93,17 +99,20 @@ namespace GamblersMod.config
             configDoubleChance = GetConfigFileKeyValue<int>(configFile, GAMBLING_CHANCE_SECTION_KEY, CONFIG_DOUBLE_CHANCE_KEY);
             configHalveChance = GetConfigFileKeyValue<int>(configFile, GAMBLING_CHANCE_SECTION_KEY, CONFIG_HALVE_CHANCE_KEY);
             configZeroChance = GetConfigFileKeyValue<int>(configFile, GAMBLING_CHANCE_SECTION_KEY, CONFIG_ZERO_CHANCE_KEY);
+            configExplodeChance = GetConfigFileKeyValue<int>(configFile, GAMBLING_CHANCE_SECTION_KEY, CONFIG_EXPLODE_CHANCE_KEY);
 
             configJackpotMultiplier = GetConfigFileKeyValue<float>(configFile, GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_JACKPOT_MULTIPLIER);
             configTripleMultiplier = GetConfigFileKeyValue<float>(configFile, GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_TRIPLE_MULTIPLIER);
             configDoubleMultiplier = GetConfigFileKeyValue<float>(configFile, GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_DOUBLE_MULTIPLIER);
             configHalveMultiplier = GetConfigFileKeyValue<float>(configFile, GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_HALVE_MULTIPLIER);
             configZeroMultiplier = GetConfigFileKeyValue<float>(configFile, GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_ZERO_MULTIPLIER);
+            configExplodeMultiplier = GetConfigFileKeyValue<float>(configFile, GAMBLING_MULTIPLIERS_SECTION_KEY, CONFIG_EXPLODE_MULTIPLIER);
 
             configGamblingMusicEnabled = GetConfigFileKeyValue<bool>(configFile, GAMBLING_AUDIO_SECTION_KEY, CONFIG_GAMBLING_MUSIC_ENABLED);
             configGamblingMusicVolume = GetConfigFileKeyValue<float>(configFile, GAMBLING_AUDIO_SECTION_KEY, CONFIG_GAMBLING_MUSIC_VOLUME);
 
             configNumberOfUses = GetConfigFileKeyValue<int>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES);
+            configMaxValueLimit = GetConfigFileKeyValue<int>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAX_VALUE_LIMIT);
             configMachineSpawnMode = GetConfigFileKeyValue<string>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE);
             configNumberOfRows = GetConfigFileKeyValue<int>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS);
             configMachinesPerRow = GetConfigFileKeyValue<int>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW);
@@ -127,17 +136,20 @@ namespace GamblersMod.config
             pluginLogger.LogInfo($"Double chance value from config: {configDoubleChance}");
             pluginLogger.LogInfo($"Halve chance value from config: {configHalveChance}");
             pluginLogger.LogInfo($"Zero chance value from config: {configZeroChance}");
+            pluginLogger.LogInfo($"Explode chance value from config: {configExplodeChance}");
 
             pluginLogger.LogInfo($"Jackpot multiplier value from config: {configJackpotMultiplier}");
             pluginLogger.LogInfo($"Triple multiplier value from config: {configTripleMultiplier}");
             pluginLogger.LogInfo($"Double multiplier value from config: {configDoubleMultiplier}");
             pluginLogger.LogInfo($"Halve multiplier value from config: {configHalveMultiplier}");
             pluginLogger.LogInfo($"Zero multiplier value from config: {configZeroMultiplier}");
+            pluginLogger.LogInfo($"Explode multiplier value from config: {configExplodeMultiplier}");
 
             pluginLogger.LogInfo($"Music enabled from config: {configGamblingMusicEnabled}");
             pluginLogger.LogInfo($"Music volume from config: {configGamblingMusicVolume}");
 
             pluginLogger.LogInfo($"Number of uses from config: {configNumberOfUses}");
+            pluginLogger.LogInfo($"Max value limit from config: {configMaxValueLimit}");
             pluginLogger.LogInfo($"Machine spawn mode from config: {configMachineSpawnMode}");
             pluginLogger.LogInfo($"Number of rows from config: {configNumberOfRows}");
             pluginLogger.LogInfo($"Machines per row from config: {configMachinesPerRow}");

@@ -12,6 +12,7 @@
         // General Subsection keys
         public readonly static string CONFIG_MAXCOOLDOWN = "gamblingMachineMaxCooldown";
         public readonly static string CONFIG_NUMBER_OF_USES = "Number Of Uses";
+        public readonly static string CONFIG_MAX_VALUE_LIMIT = "Max Value Limit";
 
         // Chance subsection keys
         public readonly static string CONFIG_JACKPOT_CHANCE_KEY = "JackpotChance";
@@ -19,6 +20,7 @@
         public readonly static string CONFIG_DOUBLE_CHANCE_KEY = "DoubleChance";
         public readonly static string CONFIG_HALVE_CHANCE_KEY = "HalveChance";
         public readonly static string CONFIG_ZERO_CHANCE_KEY = "ZeroChance";
+        public readonly static string CONFIG_EXPLODE_CHANCE_KEY = "ExplodeChance";
 
         // Multipliers subsection keys
         public readonly static string CONFIG_JACKPOT_MULTIPLIER = "JackpotMultiplier";
@@ -26,6 +28,7 @@
         public readonly static string CONFIG_DOUBLE_MULTIPLIER = "DoubleMultiplier";
         public readonly static string CONFIG_HALVE_MULTIPLIER = "HalveMultiplier";
         public readonly static string CONFIG_ZERO_MULTIPLIER = "ZeroMultiplier";
+        public readonly static string CONFIG_EXPLODE_MULTIPLIER = "ExplodeMultiplier";
 
         // Audio subsection keys
         public readonly static string CONFIG_GAMBLING_MUSIC_ENABLED = "GambleMachineMusicEnabled";
@@ -35,10 +38,10 @@
         public readonly static string ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST = "OnHostRecievesClientConfigRequest";
         public readonly static string ON_CLIENT_RECIEVES_HOST_CONFIG_REQUEST = "OnClientRecievesHostConfigRequest";
         public readonly static string CONFIG_COLUMN_SPACING = "Machine Spacing";
-            public readonly static string CONFIG_MACHINE_ROTATION = "Machine Rotation";
-            public readonly static string CONFIG_LAYOUT_OFFSET_X = "Layout Offset X";
-            public readonly static string CONFIG_LAYOUT_OFFSET_Y = "Layout Offset Y";
-            public readonly static string CONFIG_LAYOUT_OFFSET_Z = "Layout Offset Z";
+        public readonly static string CONFIG_MACHINE_ROTATION = "Machine Rotation";
+        public readonly static string CONFIG_LAYOUT_OFFSET_X = "Layout Offset X";
+        public readonly static string CONFIG_LAYOUT_OFFSET_Y = "Layout Offset Y";
+        public readonly static string CONFIG_LAYOUT_OFFSET_Z = "Layout Offset Z";
 
         public struct GamblingOutcome
         {
@@ -47,6 +50,7 @@
             public static string DOUBLE = "DOUBLE";
             public static string HALVE = "HALVE";
             public static string REMOVE = "REMOVE";
+            public static string EXPLODE = "EXPLODE";
             public static string DEFAULT = "DEFAULT";
         }
     }

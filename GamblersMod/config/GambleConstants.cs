@@ -13,6 +13,7 @@ namespace GamblersMod.config
 
         public static readonly string CONFIG_MAXCOOLDOWN = "gamblingMachineMaxCooldown";
         public static readonly string CONFIG_NUMBER_OF_USES = "Number Of Uses";
+        public static readonly string CONFIG_MAX_VALUE_LIMIT = "Max Value Limit";
         public static readonly string CONFIG_MACHINE_SPAWN_MODE = "Machine Spawn Mode";
         public static readonly string CONFIG_NUMBER_OF_ROWS = "Number Of Rows";
         public static readonly string CONFIG_MACHINES_PER_ROW = "Machines Per Row";
@@ -31,12 +32,14 @@ namespace GamblersMod.config
         public static readonly string CONFIG_DOUBLE_CHANCE_KEY = "DoubleChance";
         public static readonly string CONFIG_HALVE_CHANCE_KEY = "HalveChance";
         public static readonly string CONFIG_ZERO_CHANCE_KEY = "ZeroChance";
+        public static readonly string CONFIG_EXPLODE_CHANCE_KEY = "ExplodeChance";
 
         public static readonly string CONFIG_JACKPOT_MULTIPLIER = "JackpotMultiplier";
         public static readonly string CONFIG_TRIPLE_MULTIPLIER = "TripleMultiplier";
         public static readonly string CONFIG_DOUBLE_MULTIPLIER = "DoubleMultiplier";
         public static readonly string CONFIG_HALVE_MULTIPLIER = "HalveMultiplier";
         public static readonly string CONFIG_ZERO_MULTIPLIER = "ZeroMultiplier";
+        public static readonly string CONFIG_EXPLODE_MULTIPLIER = "ExplodeMultiplier";
 
         public static readonly string CONFIG_GAMBLING_MUSIC_ENABLED = "GambleMachineMusicEnabled";
         public static readonly string CONFIG_GAMBLING_MUSIC_VOLUME = "GambleMachineMusicVolume";
@@ -51,6 +54,7 @@ namespace GamblersMod.config
             public static string DOUBLE = "DOUBLE";
             public static string HALVE = "HALVE";
             public static string REMOVE = "REMOVE";
+            public static string EXPLODE = "EXPLODE";
             public static string DEFAULT = "DEFAULT";
         }
     }

@@ -3,6 +3,7 @@ using System.Collections;
 using GamblersMod.Player;
 using Unity.Netcode;
 using UnityEngine;
+using GameNetcodeStuff;
 using static GamblersMod.config.GambleConstants;
 
 namespace GamblersMod.Patches
@@ -17,12 +18,16 @@ namespace GamblersMod.Patches
         float doubleMultiplier;
         float halvedMultiplier;
         float zeroMultiplier;
+        float explodeMultiplier;
 
         int jackpotPercentage;
         int triplePercentage;
         int doublePercentage;
         int halvedPercentage;
         int removedPercentage;
+        int explodePercentage;
+
+        int maxValueLimit;
 
         bool isMusicEnabled = true;
         float musicVolume = 0.35f;
@@ -52,12 +57,16 @@ namespace GamblersMod.Patches
             doubleMultiplier = Plugin.CurrentUserConfig.configDoubleMultiplier;
             halvedMultiplier = Plugin.CurrentUserConfig.configHalveMultiplier;
             zeroMultiplier = Plugin.CurrentUserConfig.configZeroMultiplier;
+            explodeMultiplier = Plugin.CurrentUserConfig.configExplodeMultiplier;
 
             jackpotPercentage = Plugin.CurrentUserConfig.configJackpotChance;
             triplePercentage = Plugin.CurrentUserConfig.configTripleChance;
             doublePercentage = Plugin.CurrentUserConfig.configDoubleChance;
             halvedPercentage = Plugin.CurrentUserConfig.configHalveChance;
             removedPercentage = Plugin.CurrentUserConfig.configZeroChance;
+            explodePercentage = Plugin.CurrentUserConfig.configExplodeChance;
+
+            maxValueLimit = Plugin.CurrentUserConfig.configMaxValueLimit;
 
             isMusicEnabled = Plugin.CurrentUserConfig.configGamblingMusicEnabled;
             musicVolume = Plugin.CurrentUserConfig.configGamblingMusicVolume;
@@ -69,12 +78,16 @@ namespace GamblersMod.Patches
             Plugin.mls.LogInfo($"GamblingMachine: doubleMultiplier loaded from config: {doubleMultiplier}");
             Plugin.mls.LogInfo($"GamblingMachine: halvedMultiplier loaded from config: {halvedMultiplier}");
             Plugin.mls.LogInfo($"GamblingMachine: zeroMultiplier loaded from config: {zeroMultiplier}");
+            Plugin.mls.LogInfo($"GamblingMachine: explodeMultiplier loaded from config: {explodeMultiplier}");
 
             Plugin.mls.LogInfo($"GamblingMachine: jackpotPercentage loaded from config: {jackpotPercentage}");
             Plugin.mls.LogInfo($"GamblingMachine: triplePercentage loaded from config: {triplePercentage}");
             Plugin.mls.LogInfo($"GamblingMachine: doublePercentage loaded from config: {doublePercentage}");
             Plugin.mls.LogInfo($"GamblingMachine: halvedPercentage loaded from config: {halvedPercentage}");
             Plugin.mls.LogInfo($"GamblingMachine: removedPercentage loaded from config: {removedPercentage}");
+            Plugin.mls.LogInfo($"GamblingMachine: explodePercentage loaded from config: {explodePercentage}");
+
+            Plugin.mls.LogInfo($"GamblingMachine: maxValueLimit loaded from config: {maxValueLimit}");
 
             Plugin.mls.LogInfo($"GamblingMachine: gamblingMusicEnabled loaded from config: {isMusicEnabled}");
             Plugin.mls.LogInfo($"GamblingMachine: gamblingMusicVolume loaded from config: {musicVolume}");
@@ -82,7 +95,7 @@ namespace GamblersMod.Patches
             InitAudioSource();
 
             rollMinValue = 1;
-            rollMaxValue = jackpotPercentage + triplePercentage + doublePercentage + halvedPercentage + removedPercentage;
+            rollMaxValue = jackpotPercentage + triplePercentage + doublePercentage + halvedPercentage + removedPercentage + explodePercentage;
         }
 
         void Start()
@@ -105,6 +118,10 @@ namespace GamblersMod.Patches
             int halvedStart = doubleEnd;
             int halvedEnd = doubleEnd + halvedPercentage;
             bool isHalvedRoll = currentRoll > halvedStart && currentRoll <= halvedEnd;
+
+            int explodeStart = halvedEnd;
+            int explodeEnd = halvedEnd + explodePercentage;
+            bool isExplodeRoll = currentRoll > explodeStart && currentRoll <= explodeEnd;
 
             if (isJackpotRoll)
             {
@@ -130,12 +147,24 @@ namespace GamblersMod.Patches
                 currentGamblingOutcomeMultiplier = halvedMultiplier;
                 currentGamblingOutcome = GamblingOutcome.HALVE;
             }
+            else if (isExplodeRoll)
+            {
+                Plugin.mls.LogMessage("Rolled Explode");
+                currentGamblingOutcomeMultiplier = explodeMultiplier;
+                currentGamblingOutcome = GamblingOutcome.EXPLODE;
+            }
             else
             {
                 Plugin.mls.LogMessage("Rolled Remove");
                 currentGamblingOutcomeMultiplier = zeroMultiplier;
                 currentGamblingOutcome = GamblingOutcome.REMOVE;
             }
+        }
+
+        private void SpawnExplosion(Vector3 position)
+        {
+            // Spawn vanilla landmine explosion (handles SFX/VFX/damage)
+            Landmine.SpawnExplosion(position, true, 1f, 1f, 50, 0f, null, false);
         }
 
         public void PlayGambleResultAudio(string outcome)
@@ -160,6 +189,7 @@ namespace GamblersMod.Patches
             {
                 AudioSource.PlayClipAtPoint(Plugin.GamblingRemoveScrapAudio, transform.position, 0.6f);
             }
+            // EXPLODE uses Landmine.SpawnExplosion for SFX/VFX, no direct clip here
         }
 
         public void PlayDrumRoll()
@@ -219,7 +249,20 @@ namespace GamblersMod.Patches
 
         public int GetScrapValueBasedOnGambledOutcome(GrabbableObject scrap)
         {
-            return (int)Mathf.Floor(scrap.scrapValue * currentGamblingOutcomeMultiplier);
+            // Use double to avoid overflow before clamping
+            double raw = scrap.scrapValue * (double)currentGamblingOutcomeMultiplier;
+            double capped;
+
+            if (maxValueLimit > 0)
+            {
+                capped = Math.Min(raw, maxValueLimit);
+            }
+            else
+            {
+                capped = Math.Min(raw, int.MaxValue);
+            }
+
+            return (int)Math.Floor(capped);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -287,6 +330,10 @@ namespace GamblersMod.Patches
                 Plugin.mls.LogInfo($"Setting scrap value to: {updatedScrapValue}");
                 scrapBeingGambled.SetScrapValue(updatedScrapValue);
                 PlayGambleResultAudio(outcome);
+                if (outcome == GamblingOutcome.EXPLODE && IsServer)
+                {
+                    SpawnExplosion(playerWhoGambled.transform.position);
+                }
                 playerWhoGambled.ReleaseGamblingMachineLock();
 
                 if (IsServer)
