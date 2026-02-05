@@ -36,16 +36,19 @@ namespace GamblersMod.config
 
         public GambleConfigSettingsSerializable(ConfigFile configFile)
         {
+            LoadLegacyLayoutDefaults(configFile, out var legacySpawnMode, out var legacyRows, out var legacyMachinesPerRow, out var legacyRowSpacing, out var legacyColumnSpacing);
+
             // General
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAXCOOLDOWN, 4, "Cooldown of the machine. Reducing this will cause the drumroll sound to not sync & may also cause latency issues");
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES, 9999, "Number of times a gambling machine can be used");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, MACHINE_SPAWN_MODE_AUTO,
+            var spawnDefault = CoerceSpawnMode(legacySpawnMode);
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, spawnDefault,
                 new ConfigDescription("Machine spawn mode: AUTO spawns up to the player count, MAX fills the grid capacity",
                 new AcceptableValueList<string>(MACHINE_SPAWN_MODE_AUTO, MACHINE_SPAWN_MODE_MAX)));
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS, 1, "How many machines per row (swapped semantics)");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW, 12, "How many rows of gambling machines will be spawned (swapped semantics)");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING, 5f, "Distance between machines in a row (left/right, swapped semantics)");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING, 5f, "Distance between rows of machines (forward/back, swapped semantics)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS, legacyRows, "How many rows of gambling machines will be spawned (front to back)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW, legacyMachinesPerRow, "How many gambling machines to place per row (left to right)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING, legacyRowSpacing, "Distance between rows of machines (forward/back)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING, legacyColumnSpacing, "Distance between machines in a row (left/right)");
 
             // Chance
             configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_JACKPOT_CHANCE_KEY, 3, "Chance to roll a jackpot. Ex. If set to 3, you have a 3% chance to get a jackpot. Make sure ALL your chance values add up to 100 or else the math won't make sense!");
@@ -128,6 +131,40 @@ namespace GamblersMod.config
             bool configExists = configFile.TryGetEntry(configDef, out configEntry);
             if (!configExists) Plugin.mls.LogError($"Failed to get configuration value. Section: {section} Key: {key}");
             return configEntry.Value;
+        }
+
+        private static void LoadLegacyLayoutDefaults(ConfigFile configFile, out string spawnMode, out int rows, out int machinesPerRow, out float rowSpacing, out float columnSpacing)
+        {
+            // Defaults if no legacy values are present
+            spawnMode = MACHINE_SPAWN_MODE_AUTO;
+            rows = 1;
+            machinesPerRow = 12;
+            rowSpacing = 5f;
+            columnSpacing = 5f;
+
+            // Pull legacy entries from the old General section if they exist, then remove them to avoid duplicate categories
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, ref spawnMode);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_ROWS, ref rows);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MACHINES_PER_ROW, ref machinesPerRow);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_ROW_SPACING, ref rowSpacing);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_COLUMN_SPACING, ref columnSpacing);
+        }
+
+        private static string CoerceSpawnMode(string mode)
+        {
+            var upper = (mode ?? string.Empty).ToUpperInvariant();
+            return upper == MACHINE_SPAWN_MODE_MAX ? MACHINE_SPAWN_MODE_MAX : MACHINE_SPAWN_MODE_AUTO;
+        }
+
+        private static void TryReadLegacy<T>(ConfigFile configFile, string section, string key, ref T target)
+        {
+            var def = new ConfigDefinition(section, key);
+            if (configFile.TryGetEntry(def, out ConfigEntry<T> entry))
+            {
+                target = entry.Value;
+                // remove the legacy entry to prevent duplicate categories
+                configFile.Remove(def);
+            }
         }
     }
 }

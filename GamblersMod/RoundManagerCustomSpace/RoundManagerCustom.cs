@@ -21,13 +21,12 @@ namespace GamblersMod.RoundManagerCustomSpace
 
             var cfg = Plugin.CurrentUserConfig;
 
-            // Swap semantics: MachinesPerRow now defines how many rows, NumberOfRows defines how many machines per row
-            int rows = Mathf.Max(1, cfg.configMachinesPerRow);
-            int perRow = Mathf.Max(1, cfg.configNumberOfRows);
+            int rows = Mathf.Max(1, cfg.configNumberOfRows);
+            int perRow = Mathf.Max(1, cfg.configMachinesPerRow);
 
-            // Spacing follows swapped semantics too
-            float rowSpacing = cfg.configColumnSpacing <= 0f ? 5f : cfg.configColumnSpacing;
-            float columnSpacing = cfg.configRowSpacing <= 0f ? 5f : cfg.configRowSpacing;
+            // Enforce sensible spacing even if old configs have 0
+            float rowSpacing = cfg.configRowSpacing <= 0f ? 5f : cfg.configRowSpacing;          // forward/back between rows
+            float columnSpacing = cfg.configColumnSpacing <= 0f ? 5f : cfg.configColumnSpacing;  // left/right within a row
 
             // Anchor at the original spawn point used previously
             Vector3 basePoint = new Vector3(-27.808f, -2.6256f, -14.7409f);

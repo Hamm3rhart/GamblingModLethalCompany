@@ -207,11 +207,12 @@ namespace GamblersMod.Patches
 
         public int RollDice()
         {
-            int roll = UnityEngine.Random.Range(rollMinValue, rollMaxValue);
+            int roll = UnityEngine.Random.Range(rollMinValue, rollMaxValue + 1); // upper bound is exclusive, so add 1
+            currentRoll = roll;
 
             Plugin.mls.LogMessage($"rollMinValue: {rollMinValue}");
             Plugin.mls.LogMessage($"rollMaxValue: {rollMaxValue}");
-            Plugin.mls.LogMessage($"Roll value: {currentRoll}");
+            Plugin.mls.LogMessage($"Rolled value: {roll}");
 
             return roll;
         }
