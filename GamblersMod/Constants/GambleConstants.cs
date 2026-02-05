@@ -35,6 +35,10 @@
         public readonly static string ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST = "OnHostRecievesClientConfigRequest";
         public readonly static string ON_CLIENT_RECIEVES_HOST_CONFIG_REQUEST = "OnClientRecievesHostConfigRequest";
         public readonly static string CONFIG_COLUMN_SPACING = "Machine Spacing";
+            public readonly static string CONFIG_MACHINE_ROTATION = "Machine Rotation";
+            public readonly static string CONFIG_LAYOUT_OFFSET_X = "Layout Offset X";
+            public readonly static string CONFIG_LAYOUT_OFFSET_Y = "Layout Offset Y";
+            public readonly static string CONFIG_LAYOUT_OFFSET_Z = "Layout Offset Z";
 
         public struct GamblingOutcome
         {

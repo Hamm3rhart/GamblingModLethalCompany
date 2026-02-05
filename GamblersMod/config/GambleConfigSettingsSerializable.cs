@@ -15,6 +15,10 @@ namespace GamblersMod.config
         public int configMachinesPerRow;
         public float configRowSpacing;
         public float configColumnSpacing;
+        public float configMachineRotation;
+        public float configLayoutOffsetX;
+        public float configLayoutOffsetY;
+        public float configLayoutOffsetZ;
 
         // Gambling chances
         public int configJackpotChance;
@@ -36,7 +40,17 @@ namespace GamblersMod.config
 
         public GambleConfigSettingsSerializable(ConfigFile configFile)
         {
-            LoadLegacyLayoutDefaults(configFile, out var legacySpawnMode, out var legacyRows, out var legacyMachinesPerRow, out var legacyRowSpacing, out var legacyColumnSpacing);
+            LoadLegacyLayoutDefaults(
+                configFile,
+                out var legacySpawnMode,
+                out var legacyRows,
+                out var legacyMachinesPerRow,
+                out var legacyRowSpacing,
+                out var legacyColumnSpacing,
+                out var legacyRotation,
+                out var legacyOffsetX,
+                out var legacyOffsetY,
+                out var legacyOffsetZ);
 
             // General
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAXCOOLDOWN, 4, "Cooldown of the machine. Reducing this will cause the drumroll sound to not sync & may also cause latency issues");
@@ -45,10 +59,14 @@ namespace GamblersMod.config
             configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, spawnDefault,
                 new ConfigDescription("Machine spawn mode: AUTO spawns up to the player count, MAX fills the grid capacity",
                 new AcceptableValueList<string>(MACHINE_SPAWN_MODE_AUTO, MACHINE_SPAWN_MODE_MAX)));
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS, legacyRows, "How many rows of gambling machines will be spawned (front to back)");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW, legacyMachinesPerRow, "How many gambling machines to place per row (left to right)");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING, legacyRowSpacing, "Distance between rows of machines (forward/back)");
-            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING, legacyColumnSpacing, "Distance between machines in a row (left/right)");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_NUMBER_OF_ROWS, legacyRows, "How many rows of gambling machines will be spawned (along X). Allows negatives in spacing to flip direction");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW, legacyMachinesPerRow, "How many gambling machines to place per row (along Z). Allows negatives in spacing to flip direction");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING, legacyRowSpacing, "Distance between rows of machines along X. Decimals allowed (e.g. 0.3). Zero falls back to 5");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING, legacyColumnSpacing, "Distance between machines in a row along Z. Decimals allowed (e.g. 0.3). Zero falls back to 5");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_ROTATION, legacyRotation, "Yaw rotation for each machine in degrees (0-359). Invalid values fall back to 90");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_LAYOUT_OFFSET_X, legacyOffsetX, "Offset the anchor position on the X axis (rows). Decimals allowed. 0 keeps the base point");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_LAYOUT_OFFSET_Y, legacyOffsetY, "Offset the anchor position on the Y axis (height). Decimals allowed. 0 keeps the base point");
+            configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_LAYOUT_OFFSET_Z, legacyOffsetZ, "Offset the anchor position on the Z axis (columns). Decimals allowed. 0 keeps the base point");
 
             // Chance
             configFile.Bind(GAMBLING_CHANCE_SECTION_KEY, CONFIG_JACKPOT_CHANCE_KEY, 3, "Chance to roll a jackpot. Ex. If set to 3, you have a 3% chance to get a jackpot. Make sure ALL your chance values add up to 100 or else the math won't make sense!");
@@ -91,6 +109,10 @@ namespace GamblersMod.config
             configMachinesPerRow = GetConfigFileKeyValue<int>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINES_PER_ROW);
             configRowSpacing = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_ROW_SPACING);
             configColumnSpacing = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_COLUMN_SPACING);
+            configMachineRotation = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_ROTATION);
+            configLayoutOffsetX = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_LAYOUT_OFFSET_X);
+            configLayoutOffsetY = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_LAYOUT_OFFSET_Y);
+            configLayoutOffsetZ = GetConfigFileKeyValue<float>(configFile, GAMBLING_LAYOUT_SECTION_KEY, CONFIG_LAYOUT_OFFSET_Z);
 
             LogInitializedConfigsValues();
         }
@@ -121,6 +143,10 @@ namespace GamblersMod.config
             pluginLogger.LogInfo($"Machines per row from config: {configMachinesPerRow}");
             pluginLogger.LogInfo($"Row spacing from config: {configRowSpacing}");
             pluginLogger.LogInfo($"Column spacing from config: {configColumnSpacing}");
+            pluginLogger.LogInfo($"Machine rotation from config: {configMachineRotation}");
+            pluginLogger.LogInfo($"Layout offset X from config: {configLayoutOffsetX}");
+            pluginLogger.LogInfo($"Layout offset Y from config: {configLayoutOffsetY}");
+            pluginLogger.LogInfo($"Layout offset Z from config: {configLayoutOffsetZ}");
         }
 
         private T GetConfigFileKeyValue<T>(ConfigFile configFile, string section, string key)
@@ -133,7 +159,17 @@ namespace GamblersMod.config
             return configEntry.Value;
         }
 
-        private static void LoadLegacyLayoutDefaults(ConfigFile configFile, out string spawnMode, out int rows, out int machinesPerRow, out float rowSpacing, out float columnSpacing)
+        private static void LoadLegacyLayoutDefaults(
+            ConfigFile configFile,
+            out string spawnMode,
+            out int rows,
+            out int machinesPerRow,
+            out float rowSpacing,
+            out float columnSpacing,
+            out float rotation,
+            out float offsetX,
+            out float offsetY,
+            out float offsetZ)
         {
             // Defaults if no legacy values are present
             spawnMode = MACHINE_SPAWN_MODE_AUTO;
@@ -141,6 +177,10 @@ namespace GamblersMod.config
             machinesPerRow = 12;
             rowSpacing = 5f;
             columnSpacing = 5f;
+            rotation = 90f;
+            offsetX = 0f;
+            offsetY = 0f;
+            offsetZ = 0f;
 
             // Pull legacy entries from the old General section if they exist, then remove them to avoid duplicate categories
             TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, ref spawnMode);
@@ -148,6 +188,10 @@ namespace GamblersMod.config
             TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MACHINES_PER_ROW, ref machinesPerRow);
             TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_ROW_SPACING, ref rowSpacing);
             TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_COLUMN_SPACING, ref columnSpacing);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MACHINE_ROTATION, ref rotation);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_LAYOUT_OFFSET_X, ref offsetX);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_LAYOUT_OFFSET_Y, ref offsetY);
+            TryReadLegacy(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_LAYOUT_OFFSET_Z, ref offsetZ);
         }
 
         private static string CoerceSpawnMode(string mode)

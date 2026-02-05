@@ -8,6 +8,7 @@ namespace GamblersMod.RoundManagerCustomSpace
     {
         public RoundManager RoundManager;
         private List<Vector3> spawnPoints;
+        private float machineRotation;
 
         private void Awake()
         {
@@ -24,18 +25,24 @@ namespace GamblersMod.RoundManagerCustomSpace
             int rows = Mathf.Max(1, cfg.configNumberOfRows);
             int perRow = Mathf.Max(1, cfg.configMachinesPerRow);
 
-            // Enforce sensible spacing even if old configs have 0
-            float rowSpacing = cfg.configRowSpacing <= 0f ? 5f : cfg.configRowSpacing;          // forward/back between rows
-            float columnSpacing = cfg.configColumnSpacing <= 0f ? 5f : cfg.configColumnSpacing;  // left/right within a row
+            // Allow negative to flip direction; only fall back if exactly zero
+            float rowSpacing = Mathf.Approximately(cfg.configRowSpacing, 0f) ? 5f : cfg.configRowSpacing;          // rows along +X or -X
+            float columnSpacing = Mathf.Approximately(cfg.configColumnSpacing, 0f) ? 5f : cfg.configColumnSpacing;  // columns along +Z or -Z
+
+            machineRotation = (cfg.configMachineRotation < 0f || cfg.configMachineRotation > 359f)
+                ? 90f
+                : cfg.configMachineRotation;
 
             // Anchor at the original spawn point used previously
             Vector3 basePoint = new Vector3(-27.808f, -2.6256f, -14.7409f);
+            Vector3 layoutOffset = new Vector3(cfg.configLayoutOffsetX, cfg.configLayoutOffsetY, cfg.configLayoutOffsetZ);
+            basePoint += layoutOffset;
 
             for (int row = 0; row < rows; row++)
             {
                 for (int col = 0; col < perRow; col++)
                 {
-                    Vector3 offset = new Vector3(col * columnSpacing, 0f, row * rowSpacing);
+                    Vector3 offset = new Vector3(row * rowSpacing, 0f, col * columnSpacing);
                     spawnPoints.Add(basePoint + offset);
                 }
             }
@@ -101,7 +108,7 @@ namespace GamblersMod.RoundManagerCustomSpace
                     break;
                 }
 
-                GamblingMachineManager.Instance.Spawn(spawnPoints[i], Quaternion.Euler(0f, 90f, 0f));
+                GamblingMachineManager.Instance.Spawn(spawnPoints[i], Quaternion.Euler(0f, machineRotation, 0f));
                 Plugin.mls.LogInfo($"Spawned machine number: {i}");
             }
         }

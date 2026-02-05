@@ -18,6 +18,10 @@ namespace GamblersMod.config
         public static readonly string CONFIG_MACHINES_PER_ROW = "Machines Per Row";
         public static readonly string CONFIG_ROW_SPACING = "Row Spacing";
         public static readonly string CONFIG_COLUMN_SPACING = "Machine Spacing";
+        public static readonly string CONFIG_MACHINE_ROTATION = "Machine Rotation";
+        public static readonly string CONFIG_LAYOUT_OFFSET_X = "Layout Offset X";
+        public static readonly string CONFIG_LAYOUT_OFFSET_Y = "Layout Offset Y";
+        public static readonly string CONFIG_LAYOUT_OFFSET_Z = "Layout Offset Z";
 
         public const string MACHINE_SPAWN_MODE_AUTO = "AUTO";
         public const string MACHINE_SPAWN_MODE_MAX = "MAX";
