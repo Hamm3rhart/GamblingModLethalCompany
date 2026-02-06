@@ -1,0 +1,129 @@
+{
+  "Files": [
+    {
+      "Name": "cab-2fbc6ab4acd8de98f890db0f7e084d92",
+      "Assets": [
+        {
+          "PathID": -8797238614672040712,
+          "Name": "CanvasScaler",
+          "Type": "MonoScript"
+        },
+        {
+          "PathID": -7829234798305634336,
+          "Name": "triplekill",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": -7030229213176759517,
+          "Name": "Image",
+          "Type": "MonoScript"
+        },
+        {
+          "PathID": -6179617072042509525,
+          "Name": "kaching",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": -5755350681981302373,
+          "Name": "TextMeshProUGUI",
+          "Type": "MonoScript"
+        },
+        {
+          "PathID": -4047837396933160000,
+          "Name": "LiberationSans SDF Atlas",
+          "Type": "Texture2D"
+        },
+        {
+          "PathID": -3710010819603274585,
+          "Name": "drumroll",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": -1355119216986238472,
+          "Name": "cricket",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": -754879206000821606,
+          "Name": "womp",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": -474410898216789234,
+          "Name": "LiberationSans SDF Atlas",
+          "Type": "Texture2D"
+        },
+        {
+          "PathID": -148105317676566834,
+          "Name": "readme",
+          "Type": "TextAsset"
+        },
+        {
+          "PathID": 229752551953717527,
+          "Name": "ATM_Low",
+          "Type": "Mesh"
+        },
+        {
+          "PathID": 560532488646354119,
+          "Name": "TMP_FontAsset",
+          "Type": "MonoScript"
+        },
+        {
+          "PathID": 691992830439911174,
+          "Name": "ATM_Low",
+          "Type": "Mesh"
+        },
+        {
+          "PathID": 766846009423457430,
+          "Name": "holyshit",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": 2714218269692667538,
+          "Name": "machineMusic",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": 3142584756548045860,
+          "Name": "Font Texture",
+          "Type": "Texture2D"
+        },
+        {
+          "PathID": 5900061902493089219,
+          "Name": "Font Texture",
+          "Type": "Texture2D"
+        },
+        {
+          "PathID": 7857370195326662792,
+          "Name": "NetworkObject",
+          "Type": "MonoScript"
+        },
+        {
+          "PathID": 8090379083863367222,
+          "Name": "ATM_Beige_AlbedoTransparency",
+          "Type": "Texture2D"
+        },
+        {
+          "PathID": 8242377082280441917,
+          "Name": "doublekill",
+          "Type": "AudioClip"
+        },
+        {
+          "PathID": 8390977652835490180,
+          "Name": "GraphicRaycaster",
+          "Type": "MonoScript"
+        },
+        {
+          "PathID": 8609672895412283206,
+          "Name": "HandIcon",
+          "Type": "Texture2D"
+        },
+        {
+          "PathID": 8873941325021539716,
+          "Name": "coindrop",
+          "Type": "AudioClip"
+        }
+      ]
+    }
+  ]
+}

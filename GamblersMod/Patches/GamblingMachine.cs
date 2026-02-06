@@ -167,6 +167,12 @@ namespace GamblersMod.Patches
             Landmine.SpawnExplosion(position, true, 1f, 1f, 50, 0f, null, false);
         }
 
+        private IEnumerator DelayedExplosion(Vector3 position, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            SpawnExplosion(position);
+        }
+
         public void PlayGambleResultAudio(string outcome)
         {
             if (outcome == GamblingOutcome.JACKPOT)
@@ -330,9 +336,18 @@ namespace GamblersMod.Patches
                 Plugin.mls.LogInfo($"Setting scrap value to: {updatedScrapValue}");
                 scrapBeingGambled.SetScrapValue(updatedScrapValue);
                 PlayGambleResultAudio(outcome);
-                if (outcome == GamblingOutcome.EXPLODE && IsServer)
+                if (outcome == GamblingOutcome.EXPLODE)
                 {
-                    SpawnExplosion(playerWhoGambled.transform.position);
+                    // Play pre-explosion stinger for all clients
+                    if (Plugin.GamblingEmotionalDamageAudio)
+                    {
+                        AudioSource.PlayClipAtPoint(Plugin.GamblingEmotionalDamageAudio, playerWhoGambled.transform.position, 0.7f);
+                    }
+
+                    if (IsServer)
+                    {
+                        StartCoroutine(DelayedExplosion(playerWhoGambled.transform.position, 2f));
+                    }
                 }
                 playerWhoGambled.ReleaseGamblingMachineLock();
 

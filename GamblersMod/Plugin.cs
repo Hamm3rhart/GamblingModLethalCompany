@@ -27,6 +27,7 @@ namespace GamblersMod
         public static AudioClip GamblingDoubleScrapAudio;
         public static AudioClip GamblingTripleScrapAudio;
         public static AudioClip GamblingDrumrollScrapAudio;
+            public static AudioClip GamblingEmotionalDamageAudio;
         public static AudioClip GamblingMineExplodeAudio;
         public static GameObject GamblingATMMachine;
         public static AudioClip GamblingMachineMusicAudio;
@@ -78,6 +79,7 @@ namespace GamblersMod
             GamblingMachineMusicAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "machineMusic");
             GamblingDoubleScrapAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "doublekill");
             GamblingTripleScrapAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "triplekill");
+            GamblingEmotionalDamageAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "emotional-damage");
             GamblingMineExplodeAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "mineexplosion");
             GamblingFont = LoadAssetFromAssetBundleAndLogInfo<Font>(gamblersBundle, "3270-Regular");
             GamblingMachine = LoadAssetFromAssetBundleAndLogInfo<GameObject>(gamblersBundle, "GamblingMachine");

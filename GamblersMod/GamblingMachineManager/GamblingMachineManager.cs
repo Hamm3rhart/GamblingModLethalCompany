@@ -8,6 +8,9 @@ namespace GamblersMod
     {
         public List<GameObject> GamblingMachines;
 
+        private GameObject musicEmitter;
+        private AudioSource musicSource;
+
         public static GamblingMachineManager Instance { get; private set; }
         void Awake()
         {
@@ -29,13 +32,16 @@ namespace GamblersMod
             GamblingMachine.layer = LayerMask.NameToLayer("InteractableObject");
             GamblingMachine.GetComponent<NetworkObject>().Spawn();
 
-            // Only the first gambling machine will play music
-            if (GamblingMachines.Count >= 1)
+            // Mute per-machine music sources; use central emitter instead
+            var machineAudio = GamblingMachine.GetComponent<AudioSource>();
+            if (machineAudio != null)
             {
-                GamblingMachine.GetComponent<AudioSource>().Pause();
+                machineAudio.Pause();
             }
 
             GamblingMachines.Add(GamblingMachine);
+
+            UpdateCentralMusicEmitter();
         }
 
         public void DespawnAll()
@@ -52,6 +58,77 @@ namespace GamblersMod
         {
             Plugin.mls.LogInfo("Resetting gambling machine manager state...");
             GamblingMachines.Clear();
+            TeardownCentralMusicEmitter();
+        }
+
+        private void UpdateCentralMusicEmitter()
+        {
+            if (Plugin.CurrentUserConfig == null)
+            {
+                return;
+            }
+
+            if (!Plugin.CurrentUserConfig.configGamblingMusicEnabled || GamblingMachines.Count == 0)
+            {
+                TeardownCentralMusicEmitter();
+                return;
+            }
+
+            if (musicEmitter == null)
+            {
+                musicEmitter = new GameObject("GamblingMusicEmitter");
+                DontDestroyOnLoad(musicEmitter);
+                musicSource = musicEmitter.AddComponent<AudioSource>();
+                musicSource.loop = true;
+                musicSource.spatialBlend = 1f; // 3D
+                musicSource.rolloffMode = AudioRolloffMode.Linear;
+                musicSource.minDistance = 8f;
+                musicSource.maxDistance = 30f;
+                musicSource.clip = Plugin.GamblingMachineMusicAudio;
+            }
+
+            musicSource.volume = Plugin.CurrentUserConfig.configGamblingMusicVolume;
+
+            // Compute center as midpoint of bounding box (min/max) to cover grids evenly
+            Vector3 min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            Vector3 max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+            int count = 0;
+            foreach (var go in GamblingMachines)
+            {
+                if (go == null) continue;
+                Vector3 p = go.transform.position;
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+                count++;
+            }
+
+            if (count == 0)
+            {
+                TeardownCentralMusicEmitter();
+                return;
+            }
+
+            Vector3 center = (min + max) * 0.5f;
+            musicEmitter.transform.position = center;
+
+            if (!musicSource.isPlaying && musicSource.clip != null)
+            {
+                musicSource.Play();
+            }
+        }
+
+        private void TeardownCentralMusicEmitter()
+        {
+            if (musicSource != null)
+            {
+                musicSource.Stop();
+            }
+            if (musicEmitter != null)
+            {
+                Destroy(musicEmitter);
+                musicEmitter = null;
+                musicSource = null;
+            }
         }
     }
 }
