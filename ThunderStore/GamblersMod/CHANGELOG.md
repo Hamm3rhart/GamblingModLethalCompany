@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 1.4.0
+- Add explode outcome with configurable chance/multiplier; plays an "emotional damage" stinger, then detonates after a short delay using the landmine explosion
+- Rebuild asset bundle to include the new stinger audio and updated machine music handling
+- Centralize machine music with a shared emitter at the machine cluster midpoint; pause per-machine sources while honoring the client music toggle/volume to avoid overlapping/phasey music when several machines are nearby
+- Expand machine layout controls in detail:
+	- Machine spawn mode: AUTO spawns up to player count; MAX fills the grid capacity
+	- Grid sizing: rows (X) and machines per row (Z) define the total grid; negatives in spacing let you flip directions
+	- Spacing: row/column spacing support decimals; zero falls back to 5 to avoid overlap
+	- Rotation: yaw per machine (0-359); invalid values fallback to 90
+	- Offsets: X/Y/Z offsets shift the entire grid anchor
+- Add max value limit option to cap scrap value after gambling (0 or negative disables the cap) so extreme multipliers can't blow past intended scrap values or hit integer limits
+- Keep multiple-machine support while respecting cooldown and use-count settings
+
 ## 1.3.4
 - Add configuration to add up to 3 gambling machines!
 - Add configuration to limit the number of uses on a gambling machine

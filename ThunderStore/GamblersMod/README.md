@@ -1,18 +1,27 @@
-# Gambling Is The Only Way
+# Gambling Is the Only Way
+
+This is a fork of a fork.
+First fork: [GamblingMachineAtTheCompanyFork](https://thunderstore.io/c/lethal-company/p/Kaza/GamblingMachineAtTheCompanyFork)
+Original: [GamblingMachineAtTheCompany](https://thunderstore.io/c/lethal-company/p/JunLethalCompany/GamblingMachineAtTheCompany)
+
+I wanted to add more customization to the mod and had some feature/quality-of-life ideas.
+
+All credit goes to the original creator and the first fork’s author for updating it to the current version.
 
 ## Description
 
 "To make your ambitions come true, you have to take risks."
 
-Adds a gambling machine at "The Company" moon. You'll see it right in front of you when you land.
+Adds gambling machines at "The Company" moon. You'll see them right in front of you when you land.
 
-The gamble roll can have 5 results (these are configurable):
+The gamble roll can have 6 results (all configurable):
 
 - Jackpot = 10x
 - Triple = 3x
 - Double = 2x
 - Halve = 0.5x (scrap reduced by half)
 - Zero = 0x (scrap is worthless)
+- Explode = 0x (what do you think will happen?)
 
 The default gambling chances (these are configurable):
 
@@ -21,6 +30,7 @@ The default gambling chances (these are configurable):
 - Double = 27%
 - Halve = 50%
 - Zero = 9%
+- Explode = 1%
 
 ## How to use the gambling machine
 
@@ -32,46 +42,51 @@ While holding a scrap, walk up to the machine and press "E" (or your interaction
 - Gambling
 - Configurable gambling chances
 - Configurable gambling scrap multipliers
-- Configurable additions of gambling machines
-- Configurable number of uses for gambling machine
-- Client's configuration automatically syncs with the host
+- Configurable machine layout (grid size, spacing, rotation, spawn mode, offsets)
+- Configurable number of uses for each gambling machine
+- Optional max value cap to prevent runaway scrap values
+- Client configuration automatically syncs with the host
+- Centralized music emitter with per-machine music toggle and volume control
 
 ## Configurable Fields
 
 - General Settings
-  - Cooldown Time (reducing this will cause the drumroll sound to not sync & may also cause latency issues)
-  - Number of uses per machine 
-  - Number of machines
-- Gambling Chance fields (make sure these fields add up to 100; if not it'll still work, but math will be inaccurate)
+  - Cooldown Time (reducing this may desync the drumroll and can increase latency)
+  - Number of uses per machine
+  - Max value limit (cap scrap value after gambling; 0 disables the cap)
+
+- Machine Layout
+  - Machine spawn mode: AUTO (up to player count) or MAX (fill the grid capacity)
+  - Number of rows (along X)
+  - Machines per row (along Z)
+  - Row spacing (distance between rows; decimals allowed; 0 defaults to 5)
+  - Column spacing (distance between machines; decimals allowed; 0 defaults to 5)
+  - Machine rotation (yaw 0-359; invalid values fall back to 90)
+  - Layout offsets X/Y/Z (shift the whole grid anchor)
+
+- Gambling Chances (make sure all values add up to 100 for sensible odds)
   - Jackpot Chance
   - Triple Chance
   - Double Chance
   - Halve Chance
   - Zero Chance
+  - Explode Chance
+
 - Gambling Multipliers
   - Jackpot Multiplier
   - Triple Multiplier
   - Double Multiplier
   - Halve Multiplier
   - Zero Multiplier
+  - Explode Multiplier
+
 - Audio (Client side)
   - Enable machine music
   - Machine music volume
 
-## Feature/Enhancement request
-Feature/Enhancement requests can be put here! https://github.com/JunyDeveloper/GamblingModLethalCompany/issues
-
-Click on the <span style="color:green">*Green*</span> button that says <span style="color:green">*"New Issue"*</span> and type in the details of your request!
-
 ## Bugs
 
-This is my first **real** mod so there'll be bugs!
-
 Please report any bugs here:
-https://github.com/JunyDeveloper/GamblingModLethalCompany/issues
+https://github.com/Hamm3rhart/GamblingModLethalCompany/issues
 
 Click on the <span style="color:green">*Green*</span> button that says <span style="color:green">*"New Issue"*</span> and type in the details of your bug!
-
-## Support me for more mods :)
-
-https://ko-fi.com/jundevlethal
