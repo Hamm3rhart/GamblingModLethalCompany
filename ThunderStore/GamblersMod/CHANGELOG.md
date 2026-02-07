@@ -1,7 +1,13 @@
 # CHANGELOG
 
+## 1.4.2
+- Fix machines only appearing for the host: register the gambling machine network prefab before host/client start so all peers (including MoreCompany clients) know the prefab and receive spawns
+
+## 1.4.1
+- Fix default chances totaling 101% by setting Halve to 49% (Explode stays 1%); delete/regenerate existing BepInEx config to pick up the new defaults
+
 ## 1.4.0
-- Add explode outcome with configurable chance/multiplier; plays an "emotional damage" stinger, then detonates after a short delay using the landmine explosion
+- Add explode outcome with configurable chance/multiplier; plays an "REDACTED" stinger, then explodes after a short delay
 - Rebuild asset bundle to include the new stinger audio and updated machine music handling
 - Centralize machine music with a shared emitter at the machine cluster midpoint; pause per-machine sources while honoring the client music toggle/volume to avoid overlapping/phasey music when several machines are nearby
 - Expand machine layout controls in detail:

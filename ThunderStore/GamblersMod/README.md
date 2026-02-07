@@ -28,7 +28,7 @@ The default gambling chances (these are configurable):
 - Jackpot = 3%
 - Triple = 11%
 - Double = 27%
-- Halve = 50%
+- Halve = 49%
 - Zero = 9%
 - Explode = 1%
 

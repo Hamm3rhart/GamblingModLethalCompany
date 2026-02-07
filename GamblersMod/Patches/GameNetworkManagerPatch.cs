@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System.Linq;
+using HarmonyLib;
 using Unity.Netcode;
 
 namespace GamblersMod.Patches
@@ -7,11 +8,23 @@ namespace GamblersMod.Patches
     internal class GameNetworkManagerPatch
     {
         [HarmonyPatch("Start")]
-        [HarmonyPostfix]
-        public static void StartPatch(GameNetworkManager __instance)
+        [HarmonyPrefix]
+        public static void StartPrefix(GameNetworkManager __instance)
         {
-            Plugin.mls.LogInfo("Adding Gambling machine to network prefab");
-            NetworkManager.Singleton.AddNetworkPrefab(Plugin.GamblingMachine);
+            if (Plugin.GamblingMachine == null || NetworkManager.Singleton == null)
+            {
+                Plugin.mls.LogError("Cannot register gambling machine prefab: missing asset or NetworkManager");
+                return;
+            }
+
+            // Register before the host/client starts so spawn packets are recognized by all peers
+            var prefabs = NetworkManager.Singleton.NetworkConfig.Prefabs;
+            bool alreadyRegistered = prefabs.Prefabs.Any(p => p.Prefab != null && p.Prefab.name == Plugin.GamblingMachine.name);
+            if (!alreadyRegistered)
+            {
+                Plugin.mls.LogInfo("Registering gambling machine network prefab early");
+                NetworkManager.Singleton.AddNetworkPrefab(Plugin.GamblingMachine);
+            }
         }
 
         [HarmonyPostfix]
