@@ -28,12 +28,12 @@ namespace GamblersMod.Patches
 			bool isHost = NetworkManager.Singleton.IsHost;
 			if (isHost)
 			{
-				Plugin.mls.LogInfo("Registering host config message handler: Junypai.GamblersMod_" + GambleConstants.ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST);
-				NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Junypai.GamblersMod_" + GambleConstants.ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST, new CustomMessagingManager.HandleNamedMessageDelegate(GambleConfigNetworkHelper.OnHostRecievesClientConfigRequest));
+				Plugin.mls.LogInfo("Registering host config message handler: Hamm3rhart.GamblersMod_" + GambleConstants.ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST);
+				NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Hamm3rhart.GamblersMod_" + GambleConstants.ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST, new CustomMessagingManager.HandleNamedMessageDelegate(GambleConfigNetworkHelper.OnHostRecievesClientConfigRequest));
 			}
 			else
 			{
-				NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Junypai.GamblersMod_" + GambleConstants.ON_CLIENT_RECIEVES_HOST_CONFIG_REQUEST, new CustomMessagingManager.HandleNamedMessageDelegate(GambleConfigNetworkHelper.OnClientRecievesHostConfigRequest));
+				NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("Hamm3rhart.GamblersMod_" + GambleConstants.ON_CLIENT_RECIEVES_HOST_CONFIG_REQUEST, new CustomMessagingManager.HandleNamedMessageDelegate(GambleConfigNetworkHelper.OnClientRecievesHostConfigRequest));
 				GambleConfigNetworkHelper.StartClientRequestConfigFromHost();
 			}
 		}

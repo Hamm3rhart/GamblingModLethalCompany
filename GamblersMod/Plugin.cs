@@ -12,7 +12,7 @@ namespace GamblersMod
     [BepInPlugin(modGUID, modName, modVersion)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string modGUID = "Junypai.GamblersMod";
+        public const string modGUID = "Hamm3rhart.GamblersMod";
         public const string modName = "Gamblers Mod";
         public const string modVersion = "1.0.0";
 
@@ -28,7 +28,6 @@ namespace GamblersMod
         public static AudioClip GamblingTripleScrapAudio;
         public static AudioClip GamblingDrumrollScrapAudio;
             public static AudioClip GamblingEmotionalDamageAudio;
-        public static AudioClip GamblingMineExplodeAudio;
         public static GameObject GamblingATMMachine;
         public static AudioClip GamblingMachineMusicAudio;
         public static GameObject GamblingMachineResultCanvas;
@@ -82,7 +81,6 @@ namespace GamblersMod
             GamblingDoubleScrapAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "doublekill");
             GamblingTripleScrapAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "triplekill");
             GamblingEmotionalDamageAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "emotional-damage");
-            GamblingMineExplodeAudio = LoadAssetFromAssetBundleAndLogInfo<AudioClip>(gamblersBundle, "mineexplosion");
             GamblingFont = LoadAssetFromAssetBundleAndLogInfo<Font>(gamblersBundle, "3270-Regular");
             GamblingMachine = LoadAssetFromAssetBundleAndLogInfo<GameObject>(gamblersBundle, "GamblingMachine");
             GamblingHandIcon = LoadAssetFromAssetBundleAndLogInfo<GameObject>(gamblersBundle, "HandIconGO");
@@ -117,7 +115,11 @@ namespace GamblersMod
 
         public static void LogDebug(string message)
         {
-            // For testing, always log debug messages with a clear prefix
+            if (!DebugLoggingEnabled)
+            {
+                return;
+            }
+
             mls.LogInfo($"[GambleDebug] {message}");
         }
 

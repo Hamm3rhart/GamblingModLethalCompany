@@ -26,7 +26,7 @@ namespace GamblersMod.config
 					fastBufferWriter.WriteValueSafe<int>(ref num, default(FastBufferWriter.ForPrimitives));
 					fastBufferWriter.WriteBytesSafe(serializedSettings, -1, 0);
 					Plugin.mls.LogInfo(string.Format("Sending host config data to client with id of {0}...", clientId));
-					NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Junypai.GamblersMod_" + GambleConstants.ON_CLIENT_RECIEVES_HOST_CONFIG_REQUEST, clientId, fastBufferWriter, 4);
+					NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Hamm3rhart.GamblersMod_" + GambleConstants.ON_CLIENT_RECIEVES_HOST_CONFIG_REQUEST, clientId, fastBufferWriter, 4);
 				}
 			}
 		}
@@ -40,7 +40,7 @@ namespace GamblersMod.config
 				Plugin.mls.LogInfo("Client is requesting configuration from host");
 				FastBufferWriter fastBufferWriter;
 				fastBufferWriter..ctor(4, 2, -1);
-				NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Junypai.GamblersMod_" + GambleConstants.ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST, 0UL, fastBufferWriter, 3);
+				NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("Hamm3rhart.GamblersMod_" + GambleConstants.ON_HOST_RECIEVES_CLIENT_CONFIG_REQUEST, 0UL, fastBufferWriter, 3);
 			}
 		}
 

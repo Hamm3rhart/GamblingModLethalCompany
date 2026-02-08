@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using GamblersMod.Player;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,6 +12,10 @@ namespace GamblersMod.Patches
 {
     internal class GamblingMachine : NetworkBehaviour
     {
+        private static readonly List<GamblingMachine> ActiveMachines = new List<GamblingMachine>();
+        private static GameObject MusicEmitter;
+        private static AudioSource MusicSource;
+
         int gamblingMachineMaxCooldown;
         public int gamblingMachineCurrentCooldown = 0;
 
@@ -47,6 +52,18 @@ namespace GamblersMod.Patches
         private int lastResultNonce = int.MinValue;
 
         public int numberOfUses;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            RegisterMachine();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            UnregisterMachine();
+        }
 
         void Awake()
         {
@@ -462,12 +479,86 @@ namespace GamblersMod.Patches
 
         private void InitAudioSource()
         {
-            if (!isMusicEnabled)
+            var source = GetComponent<AudioSource>();
+            if (source == null)
             {
-                GetComponent<AudioSource>().Pause();
+                return;
             }
 
-            GetComponent<AudioSource>().volume = musicVolume;
+            // Disable per-machine looping music; use centralized emitter instead
+            source.Stop();
+            source.enabled = false;
+        }
+
+        private void RegisterMachine()
+        {
+            if (!ActiveMachines.Contains(this))
+            {
+                ActiveMachines.Add(this);
+            }
+
+            UpdateCentralMusicEmitter();
+        }
+
+        private void UnregisterMachine()
+        {
+            ActiveMachines.Remove(this);
+            UpdateCentralMusicEmitter();
+        }
+
+        private static void UpdateCentralMusicEmitter()
+        {
+            if (ActiveMachines.Count == 0)
+            {
+                if (MusicEmitter != null)
+                {
+                    UnityEngine.Object.Destroy(MusicEmitter);
+                    MusicEmitter = null;
+                    MusicSource = null;
+                }
+                return;
+            }
+
+            if (!Plugin.CurrentUserConfig.configGamblingMusicEnabled)
+            {
+                if (MusicEmitter != null)
+                {
+                    UnityEngine.Object.Destroy(MusicEmitter);
+                    MusicEmitter = null;
+                    MusicSource = null;
+                }
+                return;
+            }
+
+            Vector3 min = ActiveMachines[0].transform.position;
+            Vector3 max = ActiveMachines[0].transform.position;
+            foreach (var machine in ActiveMachines)
+            {
+                var pos = machine.transform.position;
+                min = Vector3.Min(min, pos);
+                max = Vector3.Max(max, pos);
+            }
+
+            Vector3 center = (min + max) * 0.5f;
+
+            if (MusicEmitter == null)
+            {
+                MusicEmitter = new GameObject("GamblingMachineMusicEmitter");
+                MusicSource = MusicEmitter.AddComponent<AudioSource>();
+                MusicSource.clip = Plugin.GamblingMachineMusicAudio;
+                MusicSource.loop = true;
+                MusicSource.spatialBlend = 1f;
+                MusicSource.playOnAwake = false;
+                MusicSource.rolloffMode = AudioRolloffMode.Linear;
+            }
+
+            MusicEmitter.transform.position = center;
+            MusicSource.volume = Plugin.CurrentUserConfig.configGamblingMusicVolume;
+
+            if (MusicSource.clip != null && !MusicSource.isPlaying)
+            {
+                MusicSource.Play();
+            }
         }
     }
 }

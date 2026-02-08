@@ -11,7 +11,7 @@ using UnityEngine;
 namespace GamblersMod
 {
 	// Token: 0x02000003 RID: 3
-	[BepInPlugin("Junypai.GamblersMod", "Gamblers Mod", "1.0.0")]
+	[BepInPlugin("Hamm3rhart.GamblersMod", "Gamblers Mod", "1.0.0")]
 	public class Plugin : BaseUnityPlugin
 	{
 		// Token: 0x06000008 RID: 8 RVA: 0x00002218 File Offset: 0x00000418
@@ -23,7 +23,7 @@ namespace GamblersMod
 				Plugin.Instance = this;
 			}
 			Plugin.NetcodeWeaver();
-			Plugin.mls = Logger.CreateLogSource("Junypai.GamblersMod");
+			Plugin.mls = Logger.CreateLogSource("Hamm3rhart.GamblersMod");
 			Plugin.CurrentUserConfig = new GambleConfigSettingsSerializable(base.Config);
 			Plugin.RecentHostConfig = new GambleConfigSettingsSerializable(base.Config);
 			Plugin.UserConfigSnapshot = new GambleConfigSettingsSerializable(base.Config);
@@ -94,7 +94,7 @@ namespace GamblersMod
 		}
 
 		// Token: 0x04000003 RID: 3
-		public const string modGUID = "Junypai.GamblersMod";
+		public const string modGUID = "Hamm3rhart.GamblersMod";
 
 		// Token: 0x04000004 RID: 4
 		public const string modName = "Gamblers Mod";
@@ -103,7 +103,7 @@ namespace GamblersMod
 		public const string modVersion = "1.0.0";
 
 		// Token: 0x04000006 RID: 6
-		private readonly Harmony harmony = new Harmony("Junypai.GamblersMod");
+		private readonly Harmony harmony = new Harmony("Hamm3rhart.GamblersMod");
 
 		// Token: 0x04000007 RID: 7
 		public static Plugin Instance;

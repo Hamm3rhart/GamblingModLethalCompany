@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 1.4.5
+- Fix fork config namespace (Hamm3rhart)
+- Centralize machine music to a single emitter at the grid midpoint
+- Reduce debug logging noise (now gated by Debug Logging config)
+
+## 1.4.4
+- Fix multiplayer gambling sync: clients now see countdown, jingle, and scrap updates reliably
+- Known issue: explosions are still buggy and currently only work for the host
+- Config renamed (new config namespace for the fork)
+
 ## 1.4.3
 - Fix client interaction: ensure machines set InteractableObject layer/scale on `OnNetworkSpawn`, so clients (including MoreCompany) can raycast/interact
 
