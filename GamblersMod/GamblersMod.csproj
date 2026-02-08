@@ -49,10 +49,6 @@
       <HintPath>..\BepInEx.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="LC_API">
-      <HintPath>..\LC_API_V50.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />

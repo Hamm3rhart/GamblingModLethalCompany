@@ -7,6 +7,8 @@ namespace GamblersMod.config
     [Serializable]
     public class GambleConfigSettingsSerializable
     {
+        private const string CONFIG_DEBUG_LOGGING_KEY = "Enable Debug Logging";
+
         // General
         public int configMaxCooldown;
         public int configNumberOfUses;
@@ -41,6 +43,9 @@ namespace GamblersMod.config
         public bool configGamblingMusicEnabled;
         public float configGamblingMusicVolume;
 
+        // Debug
+        public bool configDebugLogging;
+
         public GambleConfigSettingsSerializable(ConfigFile configFile)
         {
             LoadLegacyLayoutDefaults(
@@ -59,6 +64,7 @@ namespace GamblersMod.config
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAXCOOLDOWN, 4, "Cooldown of the machine. Reducing this will cause the drumroll sound to not sync & may also cause latency issues");
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES, 9999, "Number of times a gambling machine can be used");
             configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAX_VALUE_LIMIT, int.MaxValue, "Maximum scrap value after gambling. 0 or negative disables the cap");
+            configFile.Bind(GAMBLING_GENERAL_SECTION_KEY, CONFIG_DEBUG_LOGGING_KEY, false, "Enable verbose debug logging for the mod");
             var spawnDefault = CoerceSpawnMode(legacySpawnMode);
             configFile.Bind(GAMBLING_LAYOUT_SECTION_KEY, CONFIG_MACHINE_SPAWN_MODE, spawnDefault,
                 new ConfigDescription("Machine spawn mode: AUTO spawns up to the player count, MAX fills the grid capacity",
@@ -110,6 +116,7 @@ namespace GamblersMod.config
 
             configGamblingMusicEnabled = GetConfigFileKeyValue<bool>(configFile, GAMBLING_AUDIO_SECTION_KEY, CONFIG_GAMBLING_MUSIC_ENABLED);
             configGamblingMusicVolume = GetConfigFileKeyValue<float>(configFile, GAMBLING_AUDIO_SECTION_KEY, CONFIG_GAMBLING_MUSIC_VOLUME);
+            configDebugLogging = GetConfigFileKeyValue<bool>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_DEBUG_LOGGING_KEY);
 
             configNumberOfUses = GetConfigFileKeyValue<int>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_NUMBER_OF_USES);
             configMaxValueLimit = GetConfigFileKeyValue<int>(configFile, GAMBLING_GENERAL_SECTION_KEY, CONFIG_MAX_VALUE_LIMIT);

@@ -13,6 +13,7 @@
         public readonly static string CONFIG_MAXCOOLDOWN = "gamblingMachineMaxCooldown";
         public readonly static string CONFIG_NUMBER_OF_USES = "Number Of Uses";
         public readonly static string CONFIG_MAX_VALUE_LIMIT = "Max Value Limit";
+        public readonly static string CONFIG_DEBUG_LOGGING = "Enable Debug Logging";
 
         // Chance subsection keys
         public readonly static string CONFIG_JACKPOT_CHANCE_KEY = "JackpotChance";

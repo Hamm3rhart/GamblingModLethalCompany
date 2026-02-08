@@ -39,6 +39,7 @@ namespace GamblersMod
         public static GambleConfigSettingsSerializable UserConfigSnapshot; // Snapshot of the user configuration set in their CFG file
         public static GambleConfigSettingsSerializable RecentHostConfig; // This is the most recent host configuration that we pulled
         public static GambleConfigSettingsSerializable CurrentUserConfig; // Current user config state
+        public static bool DebugLoggingEnabled;
 
         public static ManualLogSource mls;
 
@@ -56,6 +57,7 @@ namespace GamblersMod
             CurrentUserConfig = new GambleConfigSettingsSerializable(Config);
             RecentHostConfig = new GambleConfigSettingsSerializable(Config);
             UserConfigSnapshot = new GambleConfigSettingsSerializable(Config);
+            DebugLoggingEnabled = CurrentUserConfig.configDebugLogging;
 
             var DLLDirectoryName = Path.GetDirectoryName(this.Info.Location);
 
@@ -111,6 +113,12 @@ namespace GamblersMod
             }
 
             return loadedAsset;
+        }
+
+        public static void LogDebug(string message)
+        {
+            // For testing, always log debug messages with a clear prefix
+            mls.LogInfo($"[GambleDebug] {message}");
         }
 
         private static void NetcodeWeaver()

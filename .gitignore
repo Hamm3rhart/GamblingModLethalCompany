@@ -96,3 +96,4 @@ Version.cpp
 /GamblersMod/__GEN/
 /GamblersMod/bin/
 /GamblersMod/obj/
+*.zip

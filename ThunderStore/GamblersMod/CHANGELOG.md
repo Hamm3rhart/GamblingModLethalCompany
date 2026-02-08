@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 1.4.3
+- Fix client interaction: ensure machines set InteractableObject layer/scale on `OnNetworkSpawn`, so clients (including MoreCompany) can raycast/interact
+
 ## 1.4.2
 - Fix machines only appearing for the host: register the gambling machine network prefab before host/client start so all peers (including MoreCompany clients) know the prefab and receive spawns
 

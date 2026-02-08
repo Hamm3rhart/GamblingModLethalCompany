@@ -48,9 +48,63 @@ namespace GamblersMod.Patches
         // Limitations
         public int numberOfUses;
 
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            Plugin.LogDebug($"[GambleLayer] OnNetworkSpawn entered isOwner={IsOwner} isServer={IsServer} currentLayer={gameObject.layer}");
+
+            // Align layer/scale and ensure colliders are enabled on clients as well
+            gameObject.tag = "Untagged";
+
+            int interactLayer = LayerMask.NameToLayer("InteractableObject");
+            if (interactLayer < 0)
+            {
+                Plugin.LogDebug("[GambleLayer] Layer 'InteractableObject' not found; using current layer");
+                interactLayer = gameObject.layer;
+            }
+
+            gameObject.layer = interactLayer;
+            transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+
+            var colliders = GetComponentsInChildren<Collider>(includeInactive: true);
+            Plugin.LogDebug($"[GambleLayer] OnNetworkSpawn isOwner={IsOwner} isServer={IsServer} layer={gameObject.layer} colliders={colliders.Length}");
+            foreach (var col in colliders)
+            {
+                if (col == null) continue;
+                col.enabled = true;
+                col.gameObject.layer = interactLayer;
+                Plugin.LogDebug($"[GambleCollider] path={GetPath(col.transform)} layer={col.gameObject.layer} enabled={col.enabled} trigger={col.isTrigger} bounds={col.bounds}");
+            }
+        }
+
+        private static string GetPath(Transform t)
+        {
+            if (t == null) return "<null>";
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            Transform current = t;
+            while (current != null)
+            {
+                sb.Insert(0, current.name);
+                current = current.parent;
+                if (current != null) sb.Insert(0, "/");
+            }
+
+            return sb.ToString();
+        }
+
         void Awake()
         {
-            Plugin.mls.LogInfo("GamblingMachine has Awoken");
+            Plugin.LogDebug("GamblingMachine has Awoken");
+
+            // Log collider state as early fallback in case OnNetworkSpawn is skipped
+            var colliders = GetComponentsInChildren<Collider>(includeInactive: true);
+            Plugin.LogDebug($"[GambleLayer] Awake colliders={colliders.Length} rootLayer={gameObject.layer}");
+            foreach (var col in colliders)
+            {
+                if (col == null) continue;
+                Plugin.LogDebug($"[GambleCollider] Awake path={GetPath(col.transform)} layer={col.gameObject.layer} enabled={col.enabled} trigger={col.isTrigger} bounds={col.bounds}");
+            }
 
             // General
             gamblingMachineMaxCooldown = Plugin.CurrentUserConfig.configMaxCooldown;
@@ -74,22 +128,22 @@ namespace GamblersMod.Patches
             isMusicEnabled = Plugin.CurrentUserConfig.configGamblingMusicEnabled;
             musicVolume = Plugin.CurrentUserConfig.configGamblingMusicVolume;
 
-            Plugin.mls.LogInfo($"GamblingMachine: gamblingMachineMaxCooldown loaded from config: {gamblingMachineMaxCooldown}");
+            Plugin.LogDebug($"GamblingMachine: gamblingMachineMaxCooldown loaded from config: {gamblingMachineMaxCooldown}");
 
-            Plugin.mls.LogInfo($"GamblingMachine: jackpotMultiplier loaded from config: {jackpotMultiplier}");
-            Plugin.mls.LogInfo($"GamblingMachine: tripleMultiplier loaded from config: {tripleMultiplier}");
-            Plugin.mls.LogInfo($"GamblingMachine: doubleMultiplier loaded from config: {doubleMultiplier}");
-            Plugin.mls.LogInfo($"GamblingMachine: halvedMultiplier loaded from config: {halvedMultiplier}");
-            Plugin.mls.LogInfo($"GamblingMachine: zeroMultiplier loaded from config: {zeroMultiplier}");
+            Plugin.LogDebug($"GamblingMachine: jackpotMultiplier loaded from config: {jackpotMultiplier}");
+            Plugin.LogDebug($"GamblingMachine: tripleMultiplier loaded from config: {tripleMultiplier}");
+            Plugin.LogDebug($"GamblingMachine: doubleMultiplier loaded from config: {doubleMultiplier}");
+            Plugin.LogDebug($"GamblingMachine: halvedMultiplier loaded from config: {halvedMultiplier}");
+            Plugin.LogDebug($"GamblingMachine: zeroMultiplier loaded from config: {zeroMultiplier}");
 
-            Plugin.mls.LogInfo($"GamblingMachine: jackpotPercentage loaded from config: {jackpotPercentage}");
-            Plugin.mls.LogInfo($"GamblingMachine: triplePercentage loaded from config: {triplePercentage}");
-            Plugin.mls.LogInfo($"GamblingMachine: doublePercentage loaded from config: {doublePercentage}");
-            Plugin.mls.LogInfo($"GamblingMachine: halvedPercentage loaded from config: {halvedPercentage}");
-            Plugin.mls.LogInfo($"GamblingMachine: removedPercentage loaded from config: {removedPercentage}");
+            Plugin.LogDebug($"GamblingMachine: jackpotPercentage loaded from config: {jackpotPercentage}");
+            Plugin.LogDebug($"GamblingMachine: triplePercentage loaded from config: {triplePercentage}");
+            Plugin.LogDebug($"GamblingMachine: doublePercentage loaded from config: {doublePercentage}");
+            Plugin.LogDebug($"GamblingMachine: halvedPercentage loaded from config: {halvedPercentage}");
+            Plugin.LogDebug($"GamblingMachine: removedPercentage loaded from config: {removedPercentage}");
 
-            Plugin.mls.LogInfo($"GamblingMachine: gamblingMusicEnabled loaded from config: {isMusicEnabled}");
-            Plugin.mls.LogInfo($"GamblingMachine: gamblingMusicVolume loaded from config: {musicVolume}");
+            Plugin.LogDebug($"GamblingMachine: gamblingMusicEnabled loaded from config: {isMusicEnabled}");
+            Plugin.LogDebug($"GamblingMachine: gamblingMusicVolume loaded from config: {musicVolume}");
 
             InitAudioSource();
 
@@ -100,7 +154,7 @@ namespace GamblersMod.Patches
 
         void Start()
         {
-            Plugin.mls.LogInfo("GamblingMachine has Started");
+            Plugin.LogDebug("GamblingMachine has Started");
         }
 
         public void GenerateGamblingOutcomeFromCurrentRoll()
@@ -121,31 +175,31 @@ namespace GamblersMod.Patches
 
             if (isJackpotRoll)
             {
-                Plugin.mls.LogMessage($"Rolled Jackpot");
+                Plugin.LogDebug("Rolled Jackpot");
                 currentGamblingOutcomeMultiplier = jackpotMultiplier;
                 currentGamblingOutcome = GamblingOutcome.JACKPOT;
             }
             else if (isTripleRoll)
             {
-                Plugin.mls.LogMessage($"Rolled Triple");
+                Plugin.LogDebug("Rolled Triple");
                 currentGamblingOutcomeMultiplier = tripleMultiplier;
                 currentGamblingOutcome = GamblingOutcome.TRIPLE;
             }
             else if (isDoubleRoll)
             {
-                Plugin.mls.LogMessage($"Rolled Double");
+                Plugin.LogDebug("Rolled Double");
                 currentGamblingOutcomeMultiplier = doubleMultiplier;
                 currentGamblingOutcome = GamblingOutcome.DOUBLE;
             }
             else if (isHalvedRoll)
             {
-                Plugin.mls.LogMessage($"Rolled Halved");
+                Plugin.LogDebug("Rolled Halved");
                 currentGamblingOutcomeMultiplier = halvedMultiplier;
                 currentGamblingOutcome = GamblingOutcome.HALVE;
             }
             else
             {
-                Plugin.mls.LogMessage($"Rolled Remove");
+                Plugin.LogDebug("Rolled Remove");
                 currentGamblingOutcomeMultiplier = zeroMultiplier;
                 currentGamblingOutcome = GamblingOutcome.REMOVE;
             }
@@ -197,15 +251,15 @@ namespace GamblersMod.Patches
 
         IEnumerator CountdownCooldownCoroutine(Action onCountdownFinish)
         {
-            Plugin.mls.LogInfo("Start gambling machine cooldown");
+            Plugin.LogDebug("Start gambling machine cooldown");
             while (gamblingMachineCurrentCooldown > 0)
             {
                 yield return new WaitForSeconds(1);
                 gamblingMachineCurrentCooldown -= 1;
-                Plugin.mls.LogMessage($"Gambling machine cooldown: {gamblingMachineCurrentCooldown}");
+                Plugin.LogDebug($"Gambling machine cooldown: {gamblingMachineCurrentCooldown}");
             }
             onCountdownFinish();
-            Plugin.mls.LogMessage("End gambling machine cooldown");
+            Plugin.LogDebug("End gambling machine cooldown");
         }
 
         public void SetCurrentGamblingCooldownToMaxCooldown()
@@ -237,6 +291,7 @@ namespace GamblersMod.Patches
         [ServerRpc(RequireOwnership = false)]
         public void ActivateGamblingMachineServerRPC(NetworkBehaviourReference scrapBeingGambledRef, NetworkBehaviourReference playerWhoGambledRef, ServerRpcParams serverRpcParams = default)
         {
+            Plugin.LogDebug($"[GambleRPC] ActivateGamblingMachineServerRPC sender={serverRpcParams.Receive.SenderClientId} hasScrapRef={scrapBeingGambledRef.IsValid} hasPlayerRef={playerWhoGambledRef.IsValid}");
             if (!IsServer) return;
 
             // Machine cannot be used anymore

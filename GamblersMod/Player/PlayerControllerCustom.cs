@@ -1,5 +1,7 @@
 ﻿using GamblersMod.Patches;
 using GameNetcodeStuff;
+using System.Text;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,6 +13,8 @@ namespace GamblersMod.Player
         private PlayerGamblingUIManager PlayerGamblingUIManager;
         private PlayerControllerB PlayerControllerOriginal;
         public bool isUsingGamblingMachine;
+
+        private float lastRayLogTime;
 
         public PlayerControllerB OriginalController => PlayerControllerOriginal;
 
@@ -32,18 +36,25 @@ namespace GamblersMod.Player
             Vector3 forwardDirection = gameplayCamera.transform.forward;
             Ray interactionRay = new Ray(playerPosition, forwardDirection);
             float interactionRayLength = 5f;
-            int interactableMask = 1 << 9;
+
+            // Use InteractableObject layer mask, fallback to default if missing
+            int interactLayer = LayerMask.NameToLayer("InteractableObject");
+            int interactableMask = interactLayer >= 0 ? (1 << interactLayer) : Physics.DefaultRaycastLayers;
 
             if (Physics.Raycast(interactionRay, out RaycastHit interactionRayHit, interactionRayLength, interactableMask) && interactionRayHit.collider)
             {
-                GameObject hitObject = interactionRayHit.transform.gameObject;
+                if (Time.time - lastRayLogTime > 1f)
+                {
+                    lastRayLogTime = Time.time;
+                    Plugin.LogDebug($"[GambleRay] hit={interactionRayHit.collider.name} layer={interactionRayHit.collider.gameObject.layer} mask={interactableMask} origin={playerPosition} dir={forwardDirection} path={GetPath(interactionRayHit.collider.transform)}");
+                }
+                var gamblingMachine = interactionRayHit.collider.GetComponentInParent<GamblingMachine>();
 
-                if (hitObject.name.Contains("GamblingMachine"))
+                if (gamblingMachine != null)
                 {
                     PlayerGamblingUIManager.ShowInteractionText();
 
                     GrabbableObject heldObject = PlayerControllerOriginal.ItemSlots[PlayerControllerOriginal.currentItemSlot];
-                    GamblingMachine gamblingMachine = hitObject.GetComponent<GamblingMachine>();
 
                     if (gamblingMachine.isInCooldownPhase())
                     {
@@ -69,9 +80,9 @@ namespace GamblersMod.Player
                     }
                 }
 
-                if (hitObject.name.Contains("GamblingMachine") && IngamePlayerSettings.Instance.playerInput.actions.FindAction("Interact", false).triggered)
+                if (gamblingMachine != null && IngamePlayerSettings.Instance.playerInput.actions.FindAction("Interact", false).triggered)
                 {
-                    GamblingMachine gamblingMachine = hitObject.GetComponent<GamblingMachine>();
+                    Plugin.LogDebug($"[GambleRay] interact pressed; machine path={GetPath(gamblingMachine.transform)} netId={gamblingMachine.NetworkObject?.NetworkObjectId}");
                     HandleGamblingMachineInput(gamblingMachine);
                 }
             }
@@ -81,15 +92,30 @@ namespace GamblersMod.Player
             }
         }
 
+        private static string GetPath(Transform t)
+        {
+            if (t == null) return "<null>";
+            StringBuilder sb = new StringBuilder();
+            Transform current = t;
+            while (current != null)
+            {
+                sb.Insert(0, current.name);
+                current = current.parent;
+                if (current != null) sb.Insert(0, "/");
+            }
+
+            return sb.ToString();
+        }
+
         public void ReleaseGamblingMachineLock()
         {
-            Plugin.mls.LogInfo($"Releasing gambling machine lock for: {OwnerClientId}");
+            Plugin.LogDebug($"Releasing gambling machine lock for: {OwnerClientId}");
             isUsingGamblingMachine = false;
         }
 
         public void LockGamblingMachine()
         {
-            Plugin.mls.LogInfo($"Locking gambling machine for: {OwnerClientId}");
+            Plugin.LogDebug($"Locking gambling machine for: {OwnerClientId}");
             isUsingGamblingMachine = true;
         }
 
@@ -99,19 +125,42 @@ namespace GamblersMod.Player
 
             if (!heldObject)
             {
+                Plugin.LogDebug("[GambleRay] interact ignored: no held object");
                 return;
             }
 
             if (gamblingMachine.isInCooldownPhase() || gamblingMachine.numberOfUses <= 0 || isUsingGamblingMachine)
             {
+                Plugin.LogDebug($"[GambleRay] interact ignored: cooldown={gamblingMachine.isInCooldownPhase()} uses={gamblingMachine.numberOfUses} isUsing={isUsingGamblingMachine}");
                 return;
             }
 
-            Plugin.mls.LogInfo($"Gambling machine was interacted with by: {PlayerControllerOriginal.playerUsername}");
+            Plugin.LogDebug($"Gambling machine was interacted with by: {PlayerControllerOriginal.playerUsername}");
             gamblingMachine.SetCurrentGamblingCooldownToMaxCooldown();
-            Plugin.mls.LogMessage($"Scrap value of {heldObject.name} on hand: ▊{heldObject.scrapValue}");
+            Plugin.LogDebug($"Scrap value of {heldObject.name} on hand: ▊{heldObject.scrapValue}");
 
-            gamblingMachine.ActivateGamblingMachineServerRPC(heldObject, this);
+            if (heldObject.NetworkObject == null || PlayerControllerOriginal.NetworkObject == null)
+            {
+                Plugin.LogDebug("[GambleRay] interact ignored: missing NetworkObject for held item or player");
+                return;
+            }
+
+            gamblingMachine.ActivateGamblingMachineServerRPC(new NetworkObjectReference(heldObject.NetworkObject), new NetworkObjectReference(PlayerControllerOriginal.NetworkObject));
+
+            // Fallback delivery via CustomMessagingManager in case the ServerRpc is dropped
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.CustomMessagingManager != null)
+            {
+                using (var writer = new FastBufferWriter(sizeof(ulong) * 3, Allocator.Temp))
+                {
+                    writer.WriteValueSafe(gamblingMachine.NetworkObjectId);
+                    writer.WriteValueSafe(heldObject.NetworkObjectId);
+                    writer.WriteValueSafe(NetworkObjectId);
+                    nm.CustomMessagingManager.SendNamedMessage(GambleRequestRelay.MessageName, NetworkManager.ServerClientId, writer);
+                }
+                Plugin.LogDebug($"[GambleRPC] Sent fallback gamble request msg to server (machineId={gamblingMachine.NetworkObjectId}, scrapId={heldObject.NetworkObjectId}, playerId={NetworkObjectId})");
+            }
+
             PlayerGamblingUIManager.SetInteractionText($"Cooling down... {gamblingMachine.gamblingMachineCurrentCooldown}");
         }
 

@@ -3,6 +3,7 @@ using System.Collections;
 using GamblersMod.Player;
 using Unity.Netcode;
 using UnityEngine;
+using Unity.Collections;
 using GameNetcodeStuff;
 using static GamblersMod.config.GambleConstants;
 
@@ -42,6 +43,8 @@ namespace GamblersMod.Patches
         private Coroutine CountdownCooldownCoroutineBeingRan;
 
         bool lockGamblingMachineServer = false;
+
+        private int lastResultNonce = int.MinValue;
 
         public int numberOfUses;
 
@@ -272,73 +275,125 @@ namespace GamblersMod.Patches
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void ActivateGamblingMachineServerRPC(NetworkBehaviourReference scrapBeingGambledRef, NetworkBehaviourReference playerWhoGambledRef, ServerRpcParams serverRpcParams = default)
+        public void ActivateGamblingMachineServerRPC(NetworkObjectReference scrapBeingGambledRef, NetworkObjectReference playerWhoGambledRef, ServerRpcParams serverRpcParams = default)
         {
+            Plugin.LogDebug($"[GambleRPC] ActivateGamblingMachineServerRPC sender={serverRpcParams.Receive.SenderClientId}");
             if (!IsServer) return;
+
+            if (!scrapBeingGambledRef.TryGet(out NetworkObject scrapObj) || scrapObj == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineServerRPC: Failed to get scrap object on server.");
+                return;
+            }
+
+            if (!playerWhoGambledRef.TryGet(out NetworkObject playerObj) || playerObj == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineServerRPC: Failed to get player object on server.");
+                return;
+            }
+
+            var scrapBeingGambled = scrapObj.GetComponent<GrabbableObject>();
+            if (scrapBeingGambled == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineServerRPC: GrabbableObject missing on scrap object.");
+                return;
+            }
+
+            var playerWhoGambled = playerObj.GetComponent<Player.PlayerControllerCustom>();
+            if (playerWhoGambled == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineServerRPC: PlayerControllerCustom missing on player object.");
+                return;
+            }
+
+            ProcessGambleRequest(scrapBeingGambled, playerWhoGambled, serverRpcParams.Receive.SenderClientId);
+        }
+
+        internal void ProcessGambleRequest(GrabbableObject scrapBeingGambled, Player.PlayerControllerCustom playerWhoGambled, ulong senderClientId)
+        {
+            if (!IsServer)
+            {
+                Plugin.LogDebug("[GambleRPC] ProcessGambleRequest called on non-server; ignoring");
+                return;
+            }
 
             if (numberOfUses <= 0)
             {
-                Plugin.mls.LogWarning("ActivateGamblingMachineServerRPC: Machine usage limit has been reached");
+                Plugin.mls.LogWarning("ProcessGambleRequest: Machine usage limit has been reached");
                 return;
             }
 
             if (lockGamblingMachineServer)
             {
-                Plugin.mls.LogWarning($"Gambling machine is already processing one client's request. Throwing away a request for... {serverRpcParams.Receive.SenderClientId}");
+                Plugin.mls.LogWarning($"Gambling machine is already processing one client's request. Throwing away a request for... {senderClientId}");
                 return;
             }
 
             lockGamblingMachineServer = true;
             numberOfUses -= 1;
-            Plugin.mls.LogInfo($"ActivateGamblingMachineServerRPC: Number of uses left: {numberOfUses}");
-
-            if (!scrapBeingGambledRef.TryGet(out GrabbableObject scrapBeingGambled))
-            {
-                Plugin.mls.LogError("ActivateGamblingMachineServerRPC: Failed to get scrap value on client side.");
-                return;
-            }
+            Plugin.mls.LogInfo($"ProcessGambleRequest: Number of uses left: {numberOfUses}");
 
             BeginGamblingMachineCooldownClientRpc();
-            Plugin.mls.LogMessage("ActivateGamblingMachineServerRPC: Starting gambling machine cooldown phase in the server invoked by: " + serverRpcParams.Receive.SenderClientId);
+            Plugin.mls.LogMessage("ProcessGambleRequest: Starting gambling machine cooldown phase in the server invoked by: " + senderClientId);
 
             SetRoll(RollDice());
             GenerateGamblingOutcomeFromCurrentRoll();
             int updatedScrapValue = GetScrapValueBasedOnGambledOutcome(scrapBeingGambled);
+            int resultNonce = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
 
-            ActivateGamblingMachineClientRPC(scrapBeingGambledRef, playerWhoGambledRef, serverRpcParams.Receive.SenderClientId, updatedScrapValue, currentGamblingOutcome, numberOfUses);
+            // Always send ClientRPC (works reliably for MAX)
+            ActivateGamblingMachineClientRPC(new NetworkObjectReference(scrapBeingGambled.NetworkObject), new NetworkObjectReference(playerWhoGambled.NetworkObject), senderClientId, updatedScrapValue, currentGamblingOutcome, numberOfUses, resultNonce);
+
+            // Also send relay to all non-host clients (fallback for AUTO)
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.CustomMessagingManager != null)
+            {
+                foreach (var clientId in nm.ConnectedClientsIds)
+                {
+                    if (clientId == NetworkManager.ServerClientId)
+                    {
+                        continue;
+                    }
+
+                    using (var writer = new FastBufferWriter(sizeof(ulong) * 3 + sizeof(int) * 3 + 64, Allocator.Temp))
+                    {
+                        writer.WriteValueSafe(NetworkObjectId);
+                        writer.WriteValueSafe(scrapBeingGambled.NetworkObjectId);
+                        writer.WriteValueSafe(playerWhoGambled.NetworkObjectId);
+                        writer.WriteValueSafe(updatedScrapValue);
+                        writer.WriteValueSafe(numberOfUses);
+                        writer.WriteValueSafe(resultNonce);
+                        writer.WriteValueSafe(new FixedString32Bytes(currentGamblingOutcome));
+                        nm.CustomMessagingManager.SendNamedMessage(GambleResultRelay.MessageName, clientId, writer);
+                    }
+                }
+            }
         }
 
-        [ClientRpc]
-        void ActivateGamblingMachineClientRPC(NetworkBehaviourReference scrapBeingGambledRef, NetworkBehaviourReference playerWhoGambledRef, ulong invokerId, int updatedScrapValue, string outcome, int numberOfUsesServer)
+        internal void HandleGambleResult(GrabbableObject scrapBeingGambled, PlayerControllerCustom playerWhoGambled, int updatedScrapValue, string outcome, int numberOfUsesServer, int resultNonce)
         {
-            Plugin.mls.LogInfo("ActivateGamblingMachineClientRPC: Activiating gambling machines on client...");
-
-            numberOfUses = numberOfUsesServer;
-            Plugin.mls.LogInfo($"ActivateGamblingMachineClientRPC: Number of uses left: {numberOfUses}");
-
-            if (!playerWhoGambledRef.TryGet(out PlayerControllerCustom playerWhoGambled))
+            if (lastResultNonce == resultNonce)
             {
-                Plugin.mls.LogError("ActivateGamblingMachineClientRPC: Failed to get player who gambled.");
+                Plugin.LogDebug("HandleGambleResult: Duplicate result ignored");
                 return;
             }
+
+            lastResultNonce = resultNonce;
+            Plugin.mls.LogInfo("HandleGambleResult: Applying gamble result on client...");
+
+            numberOfUses = numberOfUsesServer;
+            Plugin.mls.LogInfo($"HandleGambleResult: Number of uses left: {numberOfUses}");
 
             playerWhoGambled.LockGamblingMachine();
             PlayDrumRoll();
 
             BeginGamblingMachineCooldown(() =>
             {
-                if (!scrapBeingGambledRef.TryGet(out GrabbableObject scrapBeingGambled))
-                {
-                    Plugin.mls.LogError("ActivateGamblingMachineClientRPC: Failed to get scrap value on client side.");
-                    return;
-                }
-
                 Plugin.mls.LogInfo($"Setting scrap value to: {updatedScrapValue}");
                 scrapBeingGambled.SetScrapValue(updatedScrapValue);
                 PlayGambleResultAudio(outcome);
                 if (outcome == GamblingOutcome.EXPLODE)
                 {
-                    // Play pre-explosion stinger for all clients
                     if (Plugin.GamblingEmotionalDamageAudio)
                     {
                         AudioSource.PlayClipAtPoint(Plugin.GamblingEmotionalDamageAudio, playerWhoGambled.transform.position, 0.7f);
@@ -349,6 +404,7 @@ namespace GamblersMod.Patches
                         StartCoroutine(DelayedExplosion(playerWhoGambled.transform.position, 2f));
                     }
                 }
+
                 playerWhoGambled.ReleaseGamblingMachineLock();
 
                 if (IsServer)
@@ -358,6 +414,43 @@ namespace GamblersMod.Patches
                 }
 
             });
+        }
+
+        [ClientRpc]
+        void ActivateGamblingMachineClientRPC(NetworkObjectReference scrapBeingGambledRef, NetworkObjectReference playerWhoGambledRef, ulong invokerId, int updatedScrapValue, string outcome, int numberOfUsesServer, int resultNonce)
+        {
+            Plugin.mls.LogInfo("ActivateGamblingMachineClientRPC: Activiating gambling machines on client...");
+
+            numberOfUses = numberOfUsesServer;
+            Plugin.mls.LogInfo($"ActivateGamblingMachineClientRPC: Number of uses left: {numberOfUses}");
+
+            if (!playerWhoGambledRef.TryGet(out NetworkObject playerObj) || playerObj == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineClientRPC: Failed to get player object.");
+                return;
+            }
+
+            var playerWhoGambled = playerObj.GetComponent<PlayerControllerCustom>();
+            if (playerWhoGambled == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineClientRPC: PlayerControllerCustom missing on player object.");
+                return;
+            }
+
+            if (!scrapBeingGambledRef.TryGet(out NetworkObject scrapObj) || scrapObj == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineClientRPC: Failed to get scrap object on client.");
+                return;
+            }
+
+            var scrapBeingGambled = scrapObj.GetComponent<GrabbableObject>();
+            if (scrapBeingGambled == null)
+            {
+                Plugin.mls.LogError("ActivateGamblingMachineClientRPC: GrabbableObject missing on scrap object.");
+                return;
+            }
+
+            HandleGambleResult(scrapBeingGambled, playerWhoGambled, updatedScrapValue, outcome, numberOfUsesServer, resultNonce);
         }
 
         [ClientRpc]
