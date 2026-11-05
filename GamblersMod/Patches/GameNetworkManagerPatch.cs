@@ -61,31 +61,37 @@ namespace GamblersMod.Patches
     internal static class GambleRequestRelay
     {
         internal const string MessageName = "GamblersMod.GambleRequest";
-        private static bool _registered;
+
+        // NGO creates a new CustomMessagingManager every time a host/client starts (and drops it on shutdown),
+        // so a plain "already registered" bool breaks after leaving and joining/hosting another lobby.
+        private static CustomMessagingManager _registeredOn;
 
         internal static void Register()
         {
-            if (_registered) return;
-            if (NetworkManager.Singleton == null)
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
             {
                 return;
             }
 
-            if (NetworkManager.Singleton.CustomMessagingManager == null)
+            var messaging = nm.CustomMessagingManager;
+            if (messaging == null)
             {
                 Plugin.LogDebug("[GambleRPC] CustomMessagingManager not ready; skipping relay registration");
                 return;
             }
 
-            if (!NetworkManager.Singleton.IsServer)
+            if (ReferenceEquals(_registeredOn, messaging)) return;
+
+            if (!nm.IsServer)
             {
                 Plugin.LogDebug("[GambleRPC] Not server; skipping relay registration");
                 return;
             }
 
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(MessageName, HandleMessage);
+            messaging.RegisterNamedMessageHandler(MessageName, HandleMessage);
+            _registeredOn = messaging;
             Plugin.LogDebug("[GambleRPC] Registered GambleRequest relay");
-            _registered = true;
         }
 
         private static void HandleMessage(ulong senderClientId, FastBufferReader reader)
@@ -145,25 +151,30 @@ namespace GamblersMod.Patches
     internal static class GambleResultRelay
     {
         internal const string MessageName = "GamblersMod.GambleResult";
-        private static bool _registered;
+
+        // See GambleRequestRelay: track the CustomMessagingManager instance, not a bool
+        private static CustomMessagingManager _registeredOn;
 
         internal static void Register()
         {
-            if (_registered) return;
-            if (NetworkManager.Singleton == null)
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
             {
                 return;
             }
 
-            if (NetworkManager.Singleton.CustomMessagingManager == null)
+            var messaging = nm.CustomMessagingManager;
+            if (messaging == null)
             {
                 Plugin.LogDebug("[GambleRPC] CustomMessagingManager not ready; skipping result relay registration");
                 return;
             }
 
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(MessageName, HandleMessage);
+            if (ReferenceEquals(_registeredOn, messaging)) return;
+
+            messaging.RegisterNamedMessageHandler(MessageName, HandleMessage);
+            _registeredOn = messaging;
             Plugin.LogDebug("[GambleRPC] Registered GambleResult relay");
-            _registered = true;
         }
 
         private static void HandleMessage(ulong senderClientId, FastBufferReader reader)

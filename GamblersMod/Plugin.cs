@@ -5,6 +5,7 @@ using BepInEx.Logging;
 using GamblersMod.config;
 using GamblersMod.Patches;
 using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace GamblersMod
@@ -87,6 +88,7 @@ namespace GamblersMod
 
             // Attach the gambling machine script to the gambling machine game object
             GamblingMachine.AddComponent<GamblingMachine>();
+            EnsureNetworkPrefabHash(GamblingMachine);
 
             new GameObject().AddComponent<GamblingMachineManager>();
 
@@ -111,6 +113,28 @@ namespace GamblersMod
             }
 
             return loadedAsset;
+        }
+
+        // The current bundle's NetworkObject was serialized without any fields, so GlobalObjectIdHash loads as 0.
+        // Assign a deterministic hash (same on every peer) so it can't collide with other hash-0 prefabs.
+        // Can be removed once the bundle is rebuilt with the real Netcode package.
+        private static void EnsureNetworkPrefabHash(GameObject prefab)
+        {
+            var networkObject = prefab ? prefab.GetComponent<NetworkObject>() : null;
+            var hashField = typeof(NetworkObject).GetField("GlobalObjectIdHash", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (networkObject == null || hashField == null || (uint)hashField.GetValue(networkObject) != 0)
+            {
+                return;
+            }
+
+            uint hash = 2166136261u; // FNV-1a over a stable string
+            foreach (char c in $"{modGUID}.{prefab.name}")
+            {
+                hash = unchecked((hash ^ c) * 16777619u);
+            }
+
+            hashField.SetValue(networkObject, hash);
+            mls.LogInfo($"Assigned GlobalObjectIdHash {hash} to network prefab {prefab.name}");
         }
 
         public static void LogDebug(string message)
