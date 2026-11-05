@@ -113,6 +113,7 @@ namespace GamblersMod.Patches
             Plugin.mls.LogInfo($"GamblingMachine: gamblingMusicVolume loaded from config: {musicVolume}");
 
             InitAudioSource();
+            FixPlaceholderShaders();
 
             rollMinValue = 1;
             rollMaxValue = jackpotPercentage + triplePercentage + doublePercentage + halvedPercentage + removedPercentage + explodePercentage;
@@ -187,10 +188,28 @@ namespace GamblersMod.Patches
             Landmine.SpawnExplosion(position, true, 1f, 1f, 50, 0f, null, false);
         }
 
-        private IEnumerator DelayedExplosion(Vector3 position, float delay)
+        // Runs on EVERY client: Landmine.SpawnExplosion is purely local (it spawns the VFX/SFX on this
+        // machine and only damages the local player), so each client has to trigger it itself.
+        private IEnumerator DelayedExplosion(PlayerControllerCustom playerWhoGambled, float delay)
         {
             yield return new WaitForSeconds(delay);
-            SpawnExplosion(position);
+
+            if (playerWhoGambled == null)
+            {
+                yield break;
+            }
+
+            // Read the position after the delay so the blast happens where the player is now
+            SpawnExplosion(playerWhoGambled.transform.position);
+
+            // Only the owning client may kill its own player (KillPlayer returns early otherwise).
+            // KillPlayer then syncs death + body to everyone. This also catches players who walked
+            // out of the 1m kill radius during the stinger.
+            PlayerControllerB controller = playerWhoGambled.OriginalController;
+            if (controller != null && controller == GameNetworkManager.Instance.localPlayerController && !controller.isPlayerDead)
+            {
+                playerWhoGambled.KillWithExplosion();
+            }
         }
 
         public void PlayGambleResultAudio(string outcome)
@@ -416,10 +435,8 @@ namespace GamblersMod.Patches
                         AudioSource.PlayClipAtPoint(Plugin.GamblingEmotionalDamageAudio, playerWhoGambled.transform.position, 0.7f);
                     }
 
-                    if (IsServer)
-                    {
-                        StartCoroutine(DelayedExplosion(playerWhoGambled.transform.position, 2f));
-                    }
+                    // Not gated by IsServer: every client spawns its own explosion (see DelayedExplosion)
+                    StartCoroutine(DelayedExplosion(playerWhoGambled, 2f));
                 }
 
                 playerWhoGambled.ReleaseGamblingMachineLock();
@@ -488,6 +505,60 @@ namespace GamblersMod.Patches
             // Disable per-machine looping music; use centralized emitter instead
             source.Stop();
             source.enabled = false;
+        }
+
+        private static Shader gameLitShader;
+
+        // Workaround until the asset bundle is rebuilt: the current bundle ships a placeholder "HDRP/Lit"
+        // (1 pass, no HDRP passes) that HDRP cannot render, so the machine looks transparent.
+        // The material data itself is valid HDRP/Lit data, so swapping in the game's real shader is enough.
+        private void FixPlaceholderShaders()
+        {
+            foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+            {
+                foreach (var material in renderer.sharedMaterials)
+                {
+                    if (material == null || material.shader == null)
+                    {
+                        continue;
+                    }
+
+                    if (material.shader.name != "HDRP/Lit" || material.shader.passCount > 1)
+                    {
+                        continue;
+                    }
+
+                    Shader replacement = FindGameLitShader();
+                    if (replacement == null)
+                    {
+                        Plugin.mls.LogWarning("FixPlaceholderShaders: game's HDRP/Lit shader not found; machine may render transparent");
+                        return;
+                    }
+
+                    material.shader = replacement;
+                    Plugin.LogDebug($"FixPlaceholderShaders: replaced placeholder shader on material {material.name}");
+                }
+            }
+        }
+
+        private static Shader FindGameLitShader()
+        {
+            if (gameLitShader != null)
+            {
+                return gameLitShader;
+            }
+
+            foreach (var shader in Resources.FindObjectsOfTypeAll<Shader>())
+            {
+                // The bundle's placeholder has the same name but only a single pass
+                if (shader != null && shader.name == "HDRP/Lit" && shader.passCount > 1)
+                {
+                    gameLitShader = shader;
+                    break;
+                }
+            }
+
+            return gameLitShader;
         }
 
         private void RegisterMachine()

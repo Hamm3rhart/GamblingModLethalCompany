@@ -25,7 +25,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <!-- NetcodePatcher needs Portable (or Embedded) debug symbols, not Full/pdbonly (Windows PDB) -->
+    <DebugType>portable</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -131,7 +132,6 @@
     <Compile Include="config\SerializerHelper.cs" />
     <Compile Include="GamblingMachineManager.cs" />
     <Compile Include="GrabbableObjectCustom\GrabbableObjectCustom.cs" />
-    <Compile Include="NetcodePatcher\NetcodePatchedAssemblyAttribute.cs" />
     <Compile Include="Patches\GamblingMachine.cs" />
     <Compile Include="Patches\GameNetworkManagerPatch.cs" />
     <Compile Include="Patches\GrabbableObjectPatch.cs" />
@@ -144,7 +144,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RoundManagerCustomSpace\RoundManagerCustom.cs" />
     <Compile Include="StartOfRoundCustom.cs" />
-    <Compile Include="__GEN\NetworkVariableSerializationHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig">
@@ -154,4 +153,22 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!--
+    Weave the [ServerRpc]/[ClientRpc] methods after every build. Without this step they are plain
+    local method calls and never reach the other peers.
+    One-time setup: dotnet tool install -g Evaisa.NetcodePatcher.Cli
+    The versions must match the game (Unity / Netcode for GameObjects / Unity Transport 1.x = 1.0.0).
+  -->
+  <PropertyGroup>
+    <NetcodePatcherUnityVersion>2022.3.62</NetcodePatcherUnityVersion>
+    <NetcodePatcherNetcodeVersion>1.12.2</NetcodePatcherNetcodeVersion>
+    <NetcodePatcherTransportVersion>1.0.0</NetcodePatcherTransportVersion>
+  </PropertyGroup>
+  <Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
+    <PropertyGroup>
+      <NetcodePatcherDepsListFile>$(IntermediateOutputPath)ncp-deps.list</NetcodePatcherDepsListFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(NetcodePatcherDepsListFile)" Lines="@(ReferencePathWithRefAssemblies)" Overwrite="true" />
+    <Exec Command="netcode-patch -uv $(NetcodePatcherUnityVersion) -nv $(NetcodePatcherNetcodeVersion) -tv $(NetcodePatcherTransportVersion) &quot;$(TargetPath)&quot; --dependency-file &quot;$(NetcodePatcherDepsListFile)&quot;" />
+  </Target>
 </Project>
